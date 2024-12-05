@@ -278,34 +278,42 @@ let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
              ((-5, 2, 3), Jaune); ((-5, 3, 2), Jaune); ((-6, 3, 3), Jaune)],
             [Jaune]);;
 
-  let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
-      match liste with 
-      | [] -> []
-      | t :: q -> [(t,j)] @ asso_case_couleur q j;;
-
-
-(*(-dim-1 ,1, dim)->associer_couleur -> triangle bas -> ajouter dans config -> tourner config -> nbjoueursfois*)
-
-let rec remplir_init (liste_j : couleur list) (dim : int) : configuration =
-  match liste_j with
-  | [] -> ([], []) (* Pas de joueurs, configuration vide *)
-  | joueur :: liste_restante ->
-      (* Calcul du triangle de base pour le joueur courant *)
-      let case_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
-      let triangle_colore = asso_case_couleur case_de_base joueur in
-      (* Récupération des configurations des joueurs restants *)
-      let (cases_restantes, couleurs_restantes) = remplir_init liste_restante dim in
-      (* Rotation des cases restantes pour aligner les bases des joueurs *)
-      let angle_rotation = 6 / List.length liste_j in
-      let cases_tournees =
-        List.map (fun (case, coul) -> (tourne_case angle_rotation case, coul)) cases_restantes
-      in
-      (* Fusion des résultats *)
-      let cases_finales = triangle_colore @ cases_tournees in
-      let couleurs_finales = joueur :: couleurs_restantes in
-      (cases_finales, couleurs_finales);;
-
-      remplir_init [Jaune; Rouge] 3 ;;
+ let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
+            match liste with 
+              | [] -> []
+              | t :: q -> [(t,j)] @ asso_case_couleur q j;;
+          
+          
+          
+          
+              let rec remplir_init_aux (liste_j : couleur list) (dim : int) (rotation_courante : int) : configuration =
+                match liste_j with
+                | [] -> ([], []) 
+                | joueur :: liste_restante ->
+                   
+                    let case_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
+                    let triangle_colore = asso_case_couleur case_de_base joueur in
+              
+                  
+                    let (cases_restantes, couleurs_restantes) =
+                      remplir_init_aux liste_restante dim (rotation_courante + 1)
+                    in
+              
+                    
+                    let cases_tournees =
+                      List.map
+                        (fun (case, coul) -> (tourne_case rotation_courante case, coul))
+                        triangle_colore
+                    in
+              
+                    
+                    let cases_finales = cases_tournees @ cases_restantes in
+                    let couleurs_finales = joueur :: couleurs_restantes in
+                    (cases_finales, couleurs_finales)
+              ;;
+              
+              let remplir_init (list_j : couleur list) (dim:int) : configuration = 
+                remplir_init_aux list_j dim 0;;
 
 
 
@@ -375,17 +383,17 @@ let quelle_couleur (c:case) (config:configuration) =
     let result2 = quelle_couleur (0, 1, -1) config;;  (* Devrait retourner Libre *)
     let result3 = quelle_couleur (3, -3, 0) config;;  (*pb avec la config, ce n'est pas la config de base Devrait retourner Dehors, mais il ne renvoie pas le bon ! *)*)
 
+    let liste_joueurs (_, l) = l
 
     (*q 19*)
-let rec supprime_dans_config (config:configuration) (c:case) = (*à vérifier*)
+let rec supprime_dans_config1 (config:configuration) (c:case) = (*à vérifier*)
   let (listeCase, listeCouleur)=config in
   match listeCase with 
   | [] ->([], listeCouleur)
   | (case, couleur)::q when case=c -> (*on le supprime*) (q, listeCouleur)
-  | x::q -> let (l1, l2)=supprime_dans_config (q, listeCouleur) c in (x::l1, l2);;
+  | x::q -> let (l1, l2)=supprime_dans_config1 (q, listeCouleur) c in (x::l1, l2);;
 
 (*q 20*)
-let liste_joueurs (_, l) = l
 
 
 
@@ -394,41 +402,42 @@ let liste_joueurs (_, l) = l
 
 
 
-let applique_coup config coup = (*on suppose que le coup est valide*)
-    match coup with
-     |  Du(c1, c2) -> let couleurC1= quelle_couleur c1 config in 
-      let (listeCase, listeCouleur)=config in
-      let (nouvelle_listeCase, _)=supprime_dans_config config c1 in 
-        let nouvelle_listeCase=(c2, couleurC1)::nouvelle_listeCase in (nouvelle_listeCase, listeCouleur)
-      | _ -> config
 
 
 (*on passe à la question 22*)
   
   
 
-      let rec verifier_cases_aux (case : case) (vi, vj, vk) remaining_dist case_color_list : bool = (*dans les trois conditions qui se suivent, il faut mettre un ou ou un et ?*)
-        if remaining_dist = 0 (*|| remaining_dist = 1*) then true 
+let supprime_dans_config (c1 : case) (c2 : case) (config : configuration) : configuration = 
+  let (i,j,k) = c1 in 
+  let (a,b,c) = c2 in 
+  let (case_coloree_list, color_list) = config in 
+  let nouvelle_liste = List.filter (fun ((x,y,z), _) -> not ((x = i && y = j && z = k) || (x = a && y = b && z = c))) case_coloree_list in 
+  (nouvelle_liste, color_list);;
+
+
+  let rec verifier_cases_aux (case1 : case)  (vi, vj, vk) remaining_dist case_color_list : bool =
+    if remaining_dist = 0 then true 
+    else
+      let (ci, cj, ck) = case1 in
+      if (ci < 0) then 
+        if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
+          false
         else
-          let (ci, cj, ck) = case in
-          if (ci < 0) then 
-            if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
-              false
-            else
-              verifier_cases_aux (ci + vi, cj + vj, ck + vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
-          else 
-          if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
-            false
-          else
-            verifier_cases_aux (ci - vi, cj - vj, ck - vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
-      ;;
-      
-      let est_libre_seg (c1 : case) (c2 : case) (config : configuration) : bool = (*elle est pas bonen*)
-        let ((vi, vj, vk), dist) = vec_et_dist c1 c2 in
-        let (case_color_list, _) = config in
-        (* Appelle la fonction auxiliaire *)
-        verifier_cases_aux c1 (vi, vj, vk) dist case_color_list
-      ;;
+          verifier_cases_aux (ci - vi, cj - vj, ck - vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
+      else 
+      if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
+        false
+      else
+        verifier_cases_aux (ci + vi, cj + vj, ck + vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
+
+  let est_libre_seg (c1 : case) (c2 : case) (config : configuration) : bool =
+    let config_new = supprime_dans_config c1 c2 config in
+    let ((vi, vj, vk), dist) = vec_et_dist c1 c2 in
+    let (case_color_list, _) = config_new in
+    (* Appelle la fonction auxiliaire *)
+    verifier_cases_aux c1 (vi, vj, vk) dist case_color_list
+  ;;
 
 
 
@@ -503,7 +512,28 @@ let rec est_saut_multiple (case_list : case list) (config : configuration) : boo
           if est_saut c1 c2 config then true
           else false
         | Sm casesListes-> est_saut_multiple casesListes config;;
-                          
+            
+        let rec applique_coup config coup =
+          match coup with
+          | Du(c1, c2) -> 
+              let couleurC1 = quelle_couleur c1 config in
+              let (listeCase, listeCouleur) = config in
+              (* Supprimer la case c1 et ajouter c2 avec sa couleur *)
+              let (nouvelle_listeCase, _) = supprime_dans_config1 config c1 in
+              let nouvelle_listeCase = (c2, couleurC1) :: nouvelle_listeCase in
+              (nouvelle_listeCase, listeCouleur)
+          | Sm casesListes ->
+              match casesListes with
+              | [] -> config  (* Aucun coup à appliquer *)
+              | [x] -> config (* Une seule case, pas de mouvement *)
+              | x :: y :: q -> 
+                  (* Appliquer un déplacement (Du) entre deux premières cases *)
+                  let nouvelle_config = applique_coup config (Du(x, y)) in
+                  (* Continuer avec les cases restantes *)
+                  applique_coup nouvelle_config (Sm (y :: q))
+        
+
+
  let mis_a_jour_configuration config coup =(*On doit expliquer l'erreur s'il y en a une*)
     if (est_coup_valide config coup) then let cpt=applique_coup config coup in Ok cpt
     else (*on doit trouver quelle étape a échouer, on reprend juste les cas du dessus*)
@@ -516,6 +546,9 @@ let rec est_saut_multiple (case_list : case list) (config : configuration) : boo
              else if not (est_dans_losange c2 dim) then Error "La case où on souhaite se déplacer n'appartient pas aux losanges"
              else Error "Ce coup n'est pas valide, la case d'arrivéest occupé"
         | _ -> Error "La liste de case donnée n'est pas bonne";;
+
+
+        
 
                   
       let gagnant _ = Libre
