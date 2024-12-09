@@ -251,21 +251,35 @@ au-dessus de ce segment"
 (*on passe à la question 15*)
 
 
-let rec colorie (coul:couleur) liste = (*test à faire pour cette fonction*)
-  match liste with (*on doit ajouter à chaque élément de la listela couleur coul*)
+let rec colorie (coul:couleur) liste = (*fonctionne*)
+  match liste with 
   | [] -> []
   | t::q->(t, coul):: colorie coul q;;
 
-(*je n'ai pas compris la q 16 et la 17*)
+  (*Qlq fonctions tests : 
+    let test1=colorie Rouge [];;
+    let test2=colorie Bleu[1];;
+
+    let test3=colorie Vert [1;2;3];;
+*)
+
+(*q 16*)
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
      |[] -> []
       | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
 
 
+(*les tests :*)
+
+(* Résultat attendu : { joueurs = []; cases_colorees = [] } *)
+
+
+
+
 let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
 
-  let tourne_config (config:configuration) : configuration= (*A REVOIR*)
+  let tourne_config (config:configuration) : configuration= (*teste non fait*)
     let (case_list, couleur_list)=config in
     match couleur_list with 
     | [] -> (case_list, couleur_list) 
@@ -278,7 +292,9 @@ let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
              ((-5, 2, 3), Jaune); ((-5, 3, 2), Jaune); ((-6, 3, 3), Jaune)],
             [Jaune]);;
 
- let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
+(*q 17*)
+
+            let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
             match liste with 
               | [] -> []
               | t :: q -> [(t,j)] @ asso_case_couleur q j;;
@@ -312,66 +328,22 @@ let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
                     (cases_finales, couleurs_finales)
               ;;
               
-              let remplir_init (list_j : couleur list) (dim:int) : configuration = 
+              let remplir_init (list_j : couleur list) (dim:int) : configuration = (*fonctionne*)
                 remplir_init_aux list_j dim 0;;
 
-
-
-(* Fonction pour afficher une configuration *)
+(*Les tests de remplir init :*)                
 (*
-let afficher_configuration (config : configuration) : unit =
-  let (case_list, couleur_list) = config in
-  (* Affichage des cases colorées *)
-  Printf.printf "Cases colorées :\n";
-  List.iter (fun ((x, y, z), c) ->
-    Printf.printf "((%d, %d, %d), %s)\n"
-      x y z
-      (match c with
-       | Jaune -> "Jaune"
-       | Rouge -> "Rouge"
-       | Bleu -> "Bleu"
-       | Vert -> "Vert")
-  ) case_list;
-  (* Affichage de la liste des couleurs *)
-  Printf.printf "Liste des couleurs :\n";
-  List.iter (fun c ->
-    Printf.printf "%s\n"
-      (match c with
-       | Jaune -> "Jaune"
-       | Rouge -> "Rouge"
-       | Bleu -> "Bleu"
-       | Vert -> "Vert")
-  ) couleur_list;
-  Printf.printf "\n"
-;;
-
-let () =
-  Printf.printf "Affichage de la configuration après rotation :\n";
-  afficher_configuration config_test;;
-;;*)
-
-(*il me manque la dernière question -> On passe au math*)
-
-
-(*Inutile pour le moment
-  let rec listeCouleur n = (*il va s'occuper de la liste de couleurs pour la suite*)
-    let liste=configuration_initial in  
-    match n with
-    | 0 -> []
-    | _ -> match liste with (_,[]) -> [] | (_, t::q) -> t::listeCouleur (n-1);;
-
-    (*  let remplir_init listeJoueur (dim:dimension) =(*une configuration prend un paramètre une case color list et une liste de couleur*)
-(*rajouter les dimensions et reprendre la fonction du dessus*)*)
+remplir_init [Bleu;Vert; Marron;Rouge; Noir; Jaune] 1;;
+remplir_init [Bleu;Vert; Marron] 1;;
+remplir_init [Bleu;Vert] 1;;
+remplir_init [Bleu] 1;;
 *)
-
-
-(*je ne vois pas pour la question 17, je te laisse faire*)
 
 
 (*question 18*)
 
-let quelle_couleur (c:case) (config:configuration) = 
-  if not (est_dans_etoile c) then Dehors (*ancien cas, a garder ?*)
+let quelle_couleur (c:case) (config:configuration) = (*fonctionne*) 
+  if not (est_dans_etoile c) then Dehors 
   else
     match List.assoc_opt c (fst config) with (*le fst permet de le matcher avec la première partie de la liste*)
     | None -> Libre
@@ -386,60 +358,77 @@ let quelle_couleur (c:case) (config:configuration) =
     let liste_joueurs (_, l) = l
 
     (*q 19*)
-let rec supprime_dans_config1 (config:configuration) (c:case) = (*à vérifier*)
+let rec supprime_dans_config (config:configuration) (c:case):configuration = (*fonctionne*)
   let (listeCase, listeCouleur)=config in
   match listeCase with 
   | [] ->([], listeCouleur)
   | (case, couleur)::q when case=c -> (*on le supprime*) (q, listeCouleur)
-  | x::q -> let (l1, l2)=supprime_dans_config1 (q, listeCouleur) c in (x::l1, l2);;
+  | x::q -> let (l1, l2)=supprime_dans_config (q, listeCouleur) c in (x::l1, l2);;
 
-(*q 20*)
+(*Les testes de la q19*)
+(*
+remplir_init [Bleu; Jaune; Rouge] 1;;
 
+supprime_dans_config (remplir_init [Bleu; Jaune; Rouge] 1) (0, 0, 0);;
 
-
-
-(*on passe à la question 21*)
-
-
-
-
-
-(*on passe à la question 22*)
+*)
   
   
-
+(* ATTENTION, CELLE LA N'AVAIT PAS LE BON TYPE
 let supprime_dans_config (c1 : case) (c2 : case) (config : configuration) : configuration = 
   let (i,j,k) = c1 in 
   let (a,b,c) = c2 in 
   let (case_coloree_list, color_list) = config in 
   let nouvelle_liste = List.filter (fun ((x,y,z), _) -> not ((x = i && y = j && z = k) || (x = a && y = b && z = c))) case_coloree_list in 
   (nouvelle_liste, color_list);;
+*)
+
+let rec verifier_cases_aux (case1 : case) (vecteur : case) (distance : int) (case_coloree_list : case_coloree list) : bool =
+  if distance = 0 then true  (* Toutes les cases intermédiaires sont libres *)
+  else
+    let (x, y, z) = case1 in
+    let (vx, vy, vz) = vecteur in
+    let next_case = (x + vx, y + vy, z + vz) in
+    (* Vérifie si la case suivante est occupée *)
+    if List.exists (fun (c, _) -> c = next_case) case_coloree_list then false
+    else verifier_cases_aux next_case vecteur (distance - 1) case_coloree_list
+;;
+
+let est_libre_seg (c1 : case) (c2 : case) (config : configuration) : bool =
+  let (case_coloree_list, _) = config in
+  let (vecteur, distance) = vec_et_dist c1 c2 in
+  (* Appelle la fonction auxiliaire pour vérifier toutes les cases intermédiaires *)
+  verifier_cases_aux c1 vecteur (distance - 1) case_coloree_list
+;;
 
 
-  let rec verifier_cases_aux (case1 : case)  (vi, vj, vk) remaining_dist case_color_list : bool =
-    if remaining_dist = 0 then true 
-    else
-      let (ci, cj, ck) = case1 in
-      if (ci < 0) then 
-        if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
-          false
-        else
-          verifier_cases_aux (ci - vi, cj - vj, ck - vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
-      else 
-      if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
-        false
-      else
-        verifier_cases_aux (ci + vi, cj + vj, ck + vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
-
-  let est_libre_seg (c1 : case) (c2 : case) (config : configuration) : bool =
-    let config_new = supprime_dans_config c1 c2 config in
-    let ((vi, vj, vk), dist) = vec_et_dist c1 c2 in
-    let (case_color_list, _) = config_new in
-    (* Appelle la fonction auxiliaire *)
-    verifier_cases_aux c1 (vi, vj, vk) dist case_color_list
-  ;;
+(*Les tests en eux meme sont à vérifier *)
 
 
+
+
+(* Configuration de test *)
+let config_test = (
+  [((0, 0, 0), Rouge); ((1, -1, 0), Bleu)],  (* Deux cases occupées *)
+  [Rouge; Bleu]
+);;
+
+(* Cas aligné, cases libres *)
+let test1 = est_libre_seg (0, -2, 2) (0, 2, -2) config_test;;
+(* Résultat attendu : true (toutes les cases intermédiaires sont libres) *)
+
+(* Cas aligné, une case occupée *)
+let test2 = est_libre_seg (0, 0, 0) (0, 2, -2) config_test;;
+(* Résultat attendu : false (case (0, 1, -1) est occupée par Bleu) *)
+
+(* Cas aligné, aucune case intermédiaire *)
+let test3 = est_libre_seg (0, 0, 0) (0, -1, 1) config_test;;
+(* Résultat attendu : true (aucune case intermédiaire à vérifier) *)
+
+(* Cas non aligné (mal défini par l'utilisateur) *)
+(* Ce test n'est pas censé arriver si les entrées respectent la spécification *)
+let test4 = est_libre_seg (0, 0, 0) (1, 1, -2) config_test;;
+(* Résultat attendu : Comportement non spécifié car les cases ne sont pas alignées *)
 
 
 
@@ -519,7 +508,7 @@ let rec est_saut_multiple (case_list : case list) (config : configuration) : boo
               let couleurC1 = quelle_couleur c1 config in
               let (listeCase, listeCouleur) = config in
               (* Supprimer la case c1 et ajouter c2 avec sa couleur *)
-              let (nouvelle_listeCase, _) = supprime_dans_config1 config c1 in
+              let (nouvelle_listeCase, _) = supprime_dans_config config c1 in
               let nouvelle_listeCase = (c2, couleurC1) :: nouvelle_listeCase in
               (nouvelle_listeCase, listeCouleur)
           | Sm casesListes ->
@@ -548,11 +537,6 @@ let rec est_saut_multiple (case_list : case list) (config : configuration) : boo
         | _ -> Error "La liste de case donnée n'est pas bonne";;
 
 
-        
-
-                  
+                          
       let gagnant _ = Libre
       let coup_possible _ _ = []
-
-
-(*on attend théo pour la suite, on passe aux restes de la partie*)
