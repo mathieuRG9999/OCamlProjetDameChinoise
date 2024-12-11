@@ -1,4 +1,4 @@
-let dim = 1
+let dim = 3
 
 type case = int * int * int
 
@@ -65,11 +65,10 @@ let est_dans_losange (c: case) (dim:int) =
 *)
 
 
-    let rec tourne_case m (x:case)=
-      let (a, b, c)=x in 
-      if m mod 6 =0 then x
-      else  tourne_case (m-1) (-c,-a,-b);;
-
+let rec tourne_case m (x : case) = 
+  let (a,b,c) = x in 
+  if m mod 6 = 0 then x 
+  else tourne_case (m-1) (-b, -c, -a)
       (*
     let test_tourne_case = 
       print_string ("tourner d'un sixième de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 1 (-3,-1,4) ) ) ; (*(-4,3,1)*)
@@ -250,7 +249,7 @@ let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité
       let (i, j, k)= c in 
     match m with 
     | 0 -> []
-    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_bas (m-1) (i+1,j, k-1);; 
+    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_haut (m-1) (i+1,j, k-1);; 
 
 (*Los testos 
     remplir_triangle_bas 1 (0,0,0);;
@@ -258,15 +257,17 @@ let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité
 *)
 
 
-
 (*on passe à la question 15*)
 
 
-let rec colorie (coul:couleur) liste = (*test à faire pour cette fonction*)
-  match liste with (*on doit ajouter à chaque élément de la listela couleur coul*)
-  | [] -> []
-  | t::q->(t, coul):: colorie coul q;;
+let rec colorie (j : couleur) (liste : case list) : case_coloree list=
+  match liste with 
+    | [] -> []
+    | t :: q -> [(t,j)] @ colorie j q;;
 
+
+
+  
 (* q 16 et la 17*)
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
@@ -274,7 +275,6 @@ let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= 
       | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
 
 
-let configuration_initial = ([], [ Jaune; Rouge;Noir; Marron; Bleu; Vert ]);;
 
   let tourne_config (config:configuration) : configuration= (*A REVOIR*)
     let (case_list, couleur_list)=config in
@@ -310,7 +310,7 @@ let enlever_element element liste =
   List.filter (function x -> x <> element) liste
 ;;
 
-
+(**)
 let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
   match liste with 
     | [] -> []
@@ -319,36 +319,34 @@ let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_colo
 
 
 
-    let rec remplir_init_aux liste_joueurs dim rotation_courante : configuration =
+    let rec remplir_init_aux liste_joueurs dim rotation_par_joueur rotation_courante : configuration =
       match liste_joueurs with
-      | [] -> ([], []) (* Aucun joueur, configuration vide *)
+      | [] -> ([], []) (* config vide *)
       | joueur :: reste_joueurs ->
-          (* Créer les cases de base pour le joueur *)
           let cases_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
-          (* Associer les cases avec la couleur du joueur *)
-          let cases_colorees = colorie joueur cases_de_base in
-          (* Faire tourner les cases en fonction de la rotation courante *)
           let cases_tournees =
-            List.map (fun (case, couleur) -> (tourne_case rotation_courante case, couleur)) cases_colorees
+            List.map (fun case -> (tourne_case rotation_courante case, joueur)) cases_de_base
           in
-          (* Appeler récursivement pour les autres joueurs *)
           let (cases_restantes, couleurs_restantes) =
-            remplir_init_aux reste_joueurs dim (rotation_courante + 1)
+            remplir_init_aux reste_joueurs dim rotation_par_joueur (rotation_courante + rotation_par_joueur)
           in
-          (* Ajouter les cases et la couleur actuelle aux résultats *)
           (cases_tournees @ cases_restantes, joueur :: couleurs_restantes)
     ;;
     
     let remplir_init liste_joueurs dim : configuration =
-      remplir_init_aux liste_joueurs dim 0
+      let nombre_joueurs = List.length liste_joueurs in
+      if nombre_joueurs = 0 || 6 mod nombre_joueurs <> 0 then
+        failwith "Le nombre de joueurs doit être un diviseur de 6 (1, 2, 3, 6)."
+      else
+        let rotation_par_joueur = 6 / nombre_joueurs in
+        remplir_init_aux liste_joueurs dim rotation_par_joueur 0
     ;;
     
-          remplir_init [Jaune; Rouge;Noir ] 1 ;;
+    
+    
+          remplir_init [Jaune; Rouge; Marron] 3 ;;
 
-
-
-
-  
+          let configuration_initial = remplir_init [Vert; Noir; Marron] 3
 
 
 (*il me manque la dernière question -> On passe au math*)
@@ -361,9 +359,7 @@ let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_colo
     (*  let remplir_init listeJoueur (dim:dimension) =(*une configuration prend un paramètre une case color list et une liste de couleur*)
 (*rajouter les dimensions et reprendre la fonction du dessus*)*)
 
-
 (*question 18*)
-
 let quelle_couleur (c:case) (config:configuration) = 
   if not (est_dans_etoile c) then Dehors 
   else
@@ -465,28 +461,47 @@ est_libre_seg (-6,3,3) (-4,1,3) config_test_est_libre;;
 
 (*on suppose la dimension qu'on a pris en compte au début, peut être faire une fonction pour déterminer la dimension en fonction de la config*)
 let est_saut (c1 : case) (c2 : case) (config : configuration) : bool = 
-  if not(est_dans_losange c2 dim) then false 
+  (* Vérifie si c2 est dans le losange *)
+  if not (est_dans_losange c2 dim) then false 
   else 
-  let (i,j,k) = c2 in
-  let ( _ , d) = vec_et_dist c1 c2 in 
-  if d > 2 then false
-  else 
-    let (case_coloree_list, _ ) = config in
-    if List.exists (fun ((x, y, z), _) ->x = i && y = j && z = k) case_coloree_list then false
-    else true
-      (*if est_libre_seg c1 c2 config then false 
-      else true*);;
+    let (case_coloree_list, _) = config in
+    let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+    (* Vérifie si la distance est de 2 *)
+    if d <> 2 then false
+    else
+      (* Calcule la case intermédiaire (pivot) *)
+      let (x1, y1, z1) = c1 in
+      let (x2, y2, z2) = c2 in
+      let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+      (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
+      if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+         not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+        true
+      else
+        false;;
 
-let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool =  
-  let (i,j,k) = c2 in
-  let ( _ , d) = vec_et_dist c1 c2 in 
-  if d > 2 then false
-  else 
-    let (case_coloree_list, _ ) = config in
-    if List.exists (fun ((x, y, z), _) ->x = i && y = j && z = k) case_coloree_list then false
-    else true
-      (*if est_libre_seg c1 c2 config then false 
-      else true)*);; 
+
+
+
+
+      let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool = 
+        (* Vérifie si c2 est dans le losange *)
+
+          let (case_coloree_list, _) = config in
+          let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+          (* Vérifie si la distance est de 2 *)
+          if d <> 2 then false
+          else
+            (* Calcule la case intermédiaire (pivot) *)
+            let (x1, y1, z1) = c1 in
+            let (x2, y2, z2) = c2 in
+            let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+            (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
+            if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+               not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+              true
+            else
+              false;;
 
 (*Question 25*)
 let rec est_saut_multiple (case_list : case list) (config : configuration) : bool = 
