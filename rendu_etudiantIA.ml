@@ -41,14 +41,14 @@ let est_dans_losange (c: case) (dim:int) =
     (z <= dim && z >= -dim)
      then true
   else false;;
-
+(*
   let test_est_dans_losange = 
     print_string ("le point (0,0,0) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (0,0,0) 3) ^ "       ") (*vrai*);
     print_string ("le point (-3,4,-1) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (-3,4,-1) 3) ^ "       ") (*faux*);
     print_string ("le point (-4,0,0) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (-4,0,0) 3) ^ "     ") (*n'existe pas*);
     print_string ("le point (4,-3,-1) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (4,-3,-1) 3) ^ "       ") (*vrai*);
     print_string ("le point (3,-6,3) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (3,-6,3) 3) ^ "      ") (*faux*);;
-
+*)
 
 
   let est_dans_etoile (c:case) =
@@ -56,12 +56,13 @@ let est_dans_losange (c: case) (dim:int) =
     if  (est_dans_losange (i, j, k) dim || est_dans_losange (j, k, i) dim || est_dans_losange (k,i,j) dim)   then true
     else false;;
   
+(*
     let test_est_dans_etoile = 
       print_string ("le point (0,0,0) est dans l'etoile " ^ string_of_bool (est_dans_etoile (0,0,0)) ^ "       ") (*vrai*);
       print_string ("le point (1,0,0) est dans l'etoile " ^ string_of_bool (est_dans_etoile (1,0,0)) ^ "       ") (*false*);
       print_string ("le point (7,-7,0) est dans l'etoile " ^ string_of_bool (est_dans_etoile (7,-7,0)) ^ "       ") (*false*);
       print_string ("le point (-3,4,-1) est dans l'etoile " ^ string_of_bool (est_dans_etoile (-3,4,-1)) ^ "       ") (*vrai*);;
-
+*)
 
 
     let rec tourne_case m (x:case)=
@@ -69,29 +70,31 @@ let est_dans_losange (c: case) (dim:int) =
       if m mod 6 =0 then x
       else  tourne_case (m-1) (-c,-a,-b);;
 
+      (*
     let test_tourne_case = 
       print_string ("tourner d'un sixième de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 1 (-3,-1,4) ) ) ; (*(-4,3,1)*)
       print_string ("tourner d'un tour de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 6 (-3,-1,4) ) ) ; (*(-3,-1,4)*)
       print_string ("tourner de deux sixième de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 2 (-3,-1,4) ) ) ; (*(-1,4,-3)*);;
-
+*)
 
     (*Peut être vérifier si les points sont bien dans l'étoile avant et après translation et différence*)
 
     let translate c v = 
     let (c1,c2,c3)= c in( let (v1,v2,v3)=v in (c1+v1, c2+v2, c3+v3));;
-
+(*
     let test_translate = 
       print_string ("la translation du point (-4,1,3) avec le vecteur (0,2,-2) donne le point " ^ to_string_case(translate (-4,1,3) (0,2,-2))); (*(-4,3,1)*)
       print_string ("la translation du point (-4,3,1) avec le vecteur (1,0,-1) donne le point " ^ to_string_case(translate (-4,3,1) (1,0,-1)));(*(-3,3,0)*)
       print_string ("la translation du point (-4,3,1) avec le vecteur (7,0,-486) donne le point " ^ to_string_case(translate (-4,3,1) (7,0,-486)));;(*(-3,3,-485)*)
-
+*)
     let diff_case c1 c2= 
     let (x, y, z)=c1 in (let (x1, y1, z1)=c2 in ((x-x1, y-y1, z-z1)));;
 
+(*
     let test_diff_case = 
       print_string ("la différence entre les points (0,0,0) et (0,-2,2) est " ^ to_string_case(diff_case (0,0,0) (0,-2,2))); (*(0,-2,-2)*)
       print_string ("la différence entre les points (7,0,0) et (0,-2,2) est " ^ to_string_case(diff_case (7,0,0) (0,-2,2)));;(*(7,-2,-2)*)
-
+*)
 
       (*Pareil ici on peut rentrer des cases interdites*)
 
@@ -113,11 +116,11 @@ let est_dans_losange (c: case) (dim:int) =
     
     else false;;
 
-
+(*
     let test_sont_case_voisines = 
       print_string(string_of_bool (sont_cases_voisines (-2,1,1) (-2,2,0)));
       print_string(string_of_bool (sont_cases_voisines (0,0,0) (0,-1,1)));;
-
+*)
 
     let alignement c1 c2 = (*je ne sais pas encore si cette fonction marchent et si elle est nécessaire*)
       let (x,y,z)=c1 in 
@@ -144,7 +147,7 @@ let est_dans_losange (c: case) (dim:int) =
 
 
 
-
+(*
     let test_calcul_pivot =
       (*print_string "Calcul du pivot pour (0, -2, 2) et (0, 2, -2) : ";
       match calcul_pivot (0, -2, 2) (0, 2, -2) with
@@ -161,12 +164,12 @@ let est_dans_losange (c: case) (dim:int) =
             | Some (x, y, z) -> print_string ("Pivot : (" ^ string_of_int x ^ " ," ^ string_of_int y ^" ," ^ string_of_int z ^ " )")
             | None -> print_string "Pas de pivot" (*Devrait fonctionner et renvoyer(1,0,-1)*)
  
-
+*)
     let vec_et_dist case1 case2 =
       let vecteur=diff_case case1 case2 in let (x, y,z)= vecteur in let nombre=(abs x +abs y + abs z)/2 
     in (((x/nombre, y/nombre, z/nombre)), nombre);;
     
-
+(*
     let test_vec_et_dist =
       print_string "Vecteur et distance pour (0, -2, 2) et (0, 0, 0) : ";
       match vec_et_dist (0, -2, 2) (0, 0, 0) with
@@ -178,7 +181,7 @@ let est_dans_losange (c: case) (dim:int) =
       | ((vx, vy, vz), distance) -> print_string( "Vecteur : (" ^ string_of_int vx ^ "," ^ string_of_int vy ^ "," ^string_of_int vz ^") et la Distance : " ^ string_of_int distance)
       | _ -> print_string "Erreur : Impossible de calculer le vecteur et la distance";;
 
-
+*)
 (*On passe maintenant à la partie 2*)
 
 (* on est le 23/11/2024 et il est 22:38*)
@@ -247,7 +250,7 @@ let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité
       let (i, j, k)= c in 
     match m with 
     | 0 -> []
-    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_bas (m-1) (i+1,j, k-1);; 
+    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_haut (m-1) (i+1,j, k-1);; 
 
 (*Los testos 
     remplir_triangle_bas 1 (0,0,0);;
@@ -255,15 +258,19 @@ let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité
 *)
 
 
+let configuration_initial = ([], [ Jaune; Rouge;Noir; Marron; Bleu; Vert ]);;
 
 (*on passe à la question 15*)
 
 
-let rec colorie (coul:couleur) liste = (*test à faire pour cette fonction*)
-  match liste with (*on doit ajouter à chaque élément de la listela couleur coul*)
-  | [] -> []
-  | t::q->(t, coul):: colorie coul q;;
+let rec colorie (j : couleur) (liste : case list) : case_coloree list=
+  match liste with 
+    | [] -> []
+    | t :: q -> [(t,j)] @ colorie j q;;
 
+
+
+  
 (* q 16 et la 17*)
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
@@ -271,7 +278,6 @@ let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= 
       | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
 
 
-let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
 
   let tourne_config (config:configuration) : configuration= (*A REVOIR*)
     let (case_list, couleur_list)=config in
@@ -285,7 +291,7 @@ let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]);;
           ([((-4, 1, 3), Jaune); ((-4, 2, 2), Jaune); ((-4, 3, 1), Jaune); 
             ((-5, 2, 3), Jaune); ((-5, 3, 2), Jaune); ((-6, 3, 3), Jaune)], 
            [Jaune; Rouge; Bleu; Vert; Noir; Marron]);;
-        
+       
         let config_apres_rotation = tourne_config config_test;;
         
 
@@ -307,51 +313,41 @@ let enlever_element element liste =
   List.filter (function x -> x <> element) liste
 ;;
 
-
+(*Apparement il faut le modifier et le remplacer par color*)
+(*
 let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
   match liste with 
     | [] -> []
     | t :: q -> [(t,j)] @ asso_case_couleur q j;;
+*)
 
 
 
-
-    let rec remplir_init_aux (liste_j : couleur list) (dim : int) (rotation_courante : int) : configuration =
-      match liste_j with
-      | [] -> ([], []) 
-      | joueur :: liste_restante ->
-         
-          let case_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
-          let triangle_colore = asso_case_couleur case_de_base joueur in
-    
-        
-          let (cases_restantes, couleurs_restantes) =
-            remplir_init_aux liste_restante dim (rotation_courante + 1)
-          in
-    
-          
+    let rec remplir_init_aux liste_joueurs dim rotation_par_joueur rotation_courante : configuration =
+      match liste_joueurs with
+      | [] -> ([], []) (* config vide *)
+      | joueur :: reste_joueurs ->
+          let cases_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
           let cases_tournees =
-            List.map
-              (fun (case, coul) -> (tourne_case rotation_courante case, coul))
-              triangle_colore
+          List.map (fun case -> (tourne_case rotation_courante case, joueur)) cases_de_base
           in
+          let (cases_restantes, couleurs_restantes) =
+            remplir_init_aux reste_joueurs dim rotation_par_joueur (rotation_courante + rotation_par_joueur)
+          in
+          (cases_tournees @ cases_restantes, joueur :: couleurs_restantes);;
     
-          
-          let cases_finales = cases_tournees @ cases_restantes in
-          let couleurs_finales = joueur :: couleurs_restantes in
-          (cases_finales, couleurs_finales)
+    let remplir_init liste_joueurs dim : configuration =
+      let nombre_joueurs = List.length liste_joueurs in
+      if nombre_joueurs = 0 || 6 mod nombre_joueurs <> 0 then
+        failwith "Le nombre de joueurs doit être un diviseur de 6 (1, 2, 3, 6)."
+      else
+        let rotation_par_joueur = 6 / nombre_joueurs in
+        remplir_init_aux liste_joueurs dim rotation_par_joueur 0
     ;;
     
-    let remplir_init (list_j : couleur list) (dim:int) : configuration = 
-      remplir_init_aux list_j dim 0;;
     
-          remplir_init [Jaune; Rouge] 3 ;;
-
-
-
-
-  
-
+    
+          remplir_init [Jaune; Rouge; Marron] 3 ;;
 
 (*il me manque la dernière question -> On passe au math*)
   let rec listeCouleur n = (*il va s'occuper de la liste de couleurs pour la suite*)
@@ -363,9 +359,7 @@ let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_colo
     (*  let remplir_init listeJoueur (dim:dimension) =(*une configuration prend un paramètre une case color list et une liste de couleur*)
 (*rajouter les dimensions et reprendre la fonction du dessus*)*)
 
-
 (*question 18*)
-
 let quelle_couleur (c:case) (config:configuration) = 
   if not (est_dans_etoile c) then Dehors 
   else
@@ -467,17 +461,32 @@ est_libre_seg (-6,3,3) (-4,1,3) config_test_est_libre;;
 
 (*on suppose la dimension qu'on a pris en compte au début, peut être faire une fonction pour déterminer la dimension en fonction de la config*)
 let est_saut (c1 : case) (c2 : case) (config : configuration) : bool = 
-  if not(est_dans_losange c2 dim) then false 
+  (* Vérifie si c2 est dans le losange *)
+  if not (est_dans_losange c2 dim) then false 
   else 
-  let (i,j,k) = c2 in
-  let ( _ , d) = vec_et_dist c1 c2 in 
-  if d > 2 then false
-  else 
-    let (case_coloree_list, _ ) = config in
-    if List.exists (fun ((x, y, z), _) ->x = i && y = j && z = k) case_coloree_list then false
-    else true
-      (*if est_libre_seg c1 c2 config then false 
-      else true*);;
+    let (case_coloree_list, _) = config in
+    let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+    (* Vérifie si la distance est de 2 *)
+    if d <> 2 then false
+    else
+      (* Calcule la case intermédiaire (pivot) *)
+      let (x1, y1, z1) = c1 in
+      let (x2, y2, z2) = c2 in
+      let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+      (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
+      if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+         not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+        true
+      else
+        false;;
+
+
+        let config_test = ([ ((-6, 3, 3), Jaune)], 
+        [Jaune; Rouge; Bleu; Vert; Noir; Marron]) ;;
+
+est_saut (-6,3,3) (-4,1,3) config_test
+
+
 
 let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool =  
   let (i,j,k) = c2 in
@@ -489,6 +498,30 @@ let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) 
     else true
       (*if est_libre_seg c1 c2 config then false 
       else true)*);; 
+
+
+
+      let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool = 
+ 
+          let (case_coloree_list, _) = config in
+          let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+          (* Vérifie si la distance est de 2 *)
+          if d <> 2 then false
+          else
+            (* Calcule la case intermédiaire (pivot) *)
+            let (x1, y1, z1) = c1 in
+            let (x2, y2, z2) = c2 in
+            let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+            (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
+            if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+               not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+              true
+            else
+              false;;
+
+
+
+
 
 (*Question 25*)
 let rec est_saut_multiple (case_list : case list) (config : configuration) : bool = 
@@ -546,6 +579,9 @@ let mis_a_jour_configuration config coup =(*On doit expliquer l'erreur s'il y en
             else if not (est_dans_losange c2 dim) then Error "La case où on souhaite se déplacer n'appartient pas aux losanges"
             else Error "Ce coup n'est pas valide, la case d'arrivéest occupé"
       | _ -> Error "La liste de case donnée n'est pas bonne";;
+
+
+            
 
 (*troisième partie*)
   
@@ -822,8 +858,11 @@ let rec tous_les_coups_possibles_aux (config:configuration) liste = (*nous renvo
 
 let tous_les_coups_possibles_aux (config:configuration) = tous_les_coups_possibles_aux config (case_bonne_couleur config);;
 
-let rec evaluer_coups (config: configuration) (profondeur: int)
-    joueur_max joueur_actuel listecoup (meilleur_score, meilleur_coup) =
+
+(*On a sur le github le fichier, on peut essayer de le "prunner" avec un Alpha et un Beta*)
+
+let rec evaluer_coups (config: configuration) (profondeur: int) (alpha:int) (beta:int)
+    joueur_max joueur_actuel listecoup (meilleur_score, meilleur_coup, alha) =
   match listecoup with
   | [] -> (meilleur_score, meilleur_coup) (* Aucun coup à évaluer *)
   | coup :: reste ->
@@ -831,10 +870,10 @@ let rec evaluer_coups (config: configuration) (profondeur: int)
       let nouvelle_config = applique_coup config coup in
       let score, _ =
         algoMinMax nouvelle_config (profondeur - 1) joueur_max 
-          (List.hd (liste_joueurs nouvelle_config))
+          (List.hd (liste_joueurs nouvelle_config)) alpha beta
       in
       (* Mise à jour du meilleur score et coup en fonction du joueur *)
-      let (nouveau_meilleur_score, nouveau_meilleur_coup) =
+      let (nouveau_meilleur_score, nouveau_meilleur_coup, alpha, beta) =
         if joueur_actuel = joueur_max then
           (* Maximisation pour le joueur MAX *)
           if score > meilleur_score then (score, Some coup) else (meilleur_score, meilleur_coup)
@@ -842,17 +881,17 @@ let rec evaluer_coups (config: configuration) (profondeur: int)
           (* Minimisation pour l'adversaire MIN *)
           if score < meilleur_score then (score, Some coup) else (meilleur_score, meilleur_coup)
       in
-      evaluer_coups config profondeur joueur_max joueur_actuel reste 
-        (nouveau_meilleur_score, nouveau_meilleur_coup)
+      evaluer_coups config profondeur joueur_max joueur_actuel reste alpha beta
+      (nouveau_meilleur_score, nouveau_meilleur_coup)
 
 and algoMinMax (config: configuration) (profondeur: int) 
-    joueur_max joueur_actuel : (int * coup option) =
+    joueur_max joueur_actuel (alpha:int) (beta:int) : (int * coup option) =
   if profondeur = 0 || gagnant config then
     (* Retourne le score pour la configuration courante *)
     (score_aux config joueur_max, None)
   else
     let coups_possibles =
-      List.concat (List.map (List.map snd) (tous_les_coups_possibles_aux config))
+      List.concat (List.map (List.map snd) (tous_les_coups_possibles_aux config)) alpha beta
     in
     if coups_possibles = [] then
       (* Aucun coup possible, retourne le score actuel *)
@@ -860,11 +899,57 @@ and algoMinMax (config: configuration) (profondeur: int)
     else
       (* Initialise le score pour la maximisation/minimisation *)
       let initial_score = if joueur_actuel = joueur_max then min_int else max_int in
-      evaluer_coups config profondeur joueur_max joueur_actuel coups_possibles 
+      evaluer_coups config profondeur joueur_max joueur_actuel coups_possibles alpha beta 
         (initial_score, None)
 
 
-
+        let rec evaluer_coups (config: configuration) (profondeur: int) (alpha:int) (beta:int)
+        joueur_max joueur_actuel listecoup (meilleur_score, meilleur_coup) =
+      match listecoup with
+      | [] -> (meilleur_score, meilleur_coup) (* Aucun coup à évaluer *)
+      | coup :: reste ->
+          (* Applique le coup et évalue la configuration suivante *)
+          let nouvelle_config = applique_coup config coup in
+          let score, _ =
+            algoMinMax nouvelle_config (profondeur - 1) joueur_max 
+              (List.hd (liste_joueurs nouvelle_config)) alpha beta
+          in
+          (* Mise à jour du meilleur score et coup en fonction du joueur *)
+          let (nouveau_meilleur_score, nouveau_meilleur_coup, alpha, beta) =
+            if joueur_actuel = joueur_max then
+              (* Maximisation pour le joueur MAX *)
+              let alpha = max alpha score in
+              if score > meilleur_score then (score, Some coup, alpha, beta)
+              else (meilleur_score, meilleur_coup, alpha, beta)
+            else
+              (* Minimisation pour l'adversaire MIN *)
+              let beta = min beta score in
+              if score < meilleur_score then (score, Some coup, alpha, beta)
+              else (meilleur_score, meilleur_coup, alpha, beta)
+          in
+          (* Pruning : si alpha >= beta, on arrête l'exploration *)
+          if alpha >= beta then (nouveau_meilleur_score, nouveau_meilleur_coup)
+          else evaluer_coups config profondeur alpha beta joueur_max joueur_actuel reste
+            (nouveau_meilleur_score, nouveau_meilleur_coup)
+    
+    and algoMinMax (config: configuration) (profondeur: int) 
+        joueur_max joueur_actuel (alpha:int) (beta:int) : (int * coup option) =
+      if profondeur = 0 || gagnant config then
+        (* Retourne le score pour la configuration courante *)
+        (score_aux config joueur_max, None)
+      else
+        let coups_possibles =
+          List.concat (List.map (List.map snd) (tous_les_coups_possibles_aux config))
+        in
+        if coups_possibles = [] then
+          (* Aucun coup possible, retourne le score actuel *)
+          (score_aux config joueur_max, None)
+        else
+          (* Initialise le score pour la maximisation/minimisation *)
+          let initial_score = if joueur_actuel = joueur_max then min_int else max_int in
+          evaluer_coups config profondeur alpha beta joueur_max joueur_actuel coups_possibles 
+            (initial_score, None)
+    
 
 
 
