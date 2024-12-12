@@ -27,7 +27,7 @@ let string_of_couleur x =
 type case_coloree = case * couleur;;
 type configuration = case_coloree list * couleur list;;
 type coup = Du of case * case | Sm of case list;;
-let gagnant _ = Libre
+let gagnant _ = false;;
 
 let to_string_case (c:case) = 
   let (x,y,z) = c in
@@ -48,15 +48,14 @@ let est_dans_losange (c: case) (dim:int) =
     print_string ("le point (-4,0,0) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (-4,0,0) 3) ^ "     ") (*n'existe pas*);
     print_string ("le point (4,-3,-1) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (4,-3,-1) 3) ^ "       ") (*vrai*);
     print_string ("le point (3,-6,3) est dans le losange de dimension 3 " ^ string_of_bool (est_dans_losange (3,-6,3) 3) ^ "      ") (*faux*);;
-*)
 
+*)
 
   let est_dans_etoile (c:case) =
     let (i, j, k)=c in 
     if  (est_dans_losange (i, j, k) dim || est_dans_losange (j, k, i) dim || est_dans_losange (k,i,j) dim)   then true
     else false;;
-  
-(*
+ (* 
     let test_est_dans_etoile = 
       print_string ("le point (0,0,0) est dans l'etoile " ^ string_of_bool (est_dans_etoile (0,0,0)) ^ "       ") (*vrai*);
       print_string ("le point (1,0,0) est dans l'etoile " ^ string_of_bool (est_dans_etoile (1,0,0)) ^ "       ") (*false*);
@@ -65,11 +64,19 @@ let est_dans_losange (c: case) (dim:int) =
 *)
 
 
-let rec tourne_case m (x : case) = 
-  let (a,b,c) = x in 
-  if m mod 6 = 0 then x 
-  else tourne_case (m-1) (-b, -c, -a)
-      (*
+    (*let rec tourne_case m (x:case)=
+      let (a, b, c)=x in 
+      if m mod 6 =0 then x
+      else  tourne_case (m-1) (-c,-a,-b);;
+      ne tourne pas dans le sens voulu pour remplir la configuration initiale
+
+      *) 
+
+      let rec tourne_case m (x : case) = 
+        let (a,b,c) = x in 
+        if m mod 6 = 0 then x 
+        else tourne_case (m-1) (-b, -c, -a)
+(*
     let test_tourne_case = 
       print_string ("tourner d'un sixième de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 1 (-3,-1,4) ) ) ; (*(-4,3,1)*)
       print_string ("tourner d'un tour de tour la case (-3,-1,4) renvoie la case " ^ to_string_case (tourne_case 6 (-3,-1,4) ) ) ; (*(-3,-1,4)*)
@@ -88,12 +95,11 @@ let rec tourne_case m (x : case) =
 *)
     let diff_case c1 c2= 
     let (x, y, z)=c1 in (let (x1, y1, z1)=c2 in ((x-x1, y-y1, z-z1)));;
-
-(*
-    let test_diff_case = 
+(*    let test_diff_case = 
       print_string ("la différence entre les points (0,0,0) et (0,-2,2) est " ^ to_string_case(diff_case (0,0,0) (0,-2,2))); (*(0,-2,-2)*)
       print_string ("la différence entre les points (7,0,0) et (0,-2,2) est " ^ to_string_case(diff_case (7,0,0) (0,-2,2)));;(*(7,-2,-2)*)
 *)
+
 
       (*Pareil ici on peut rentrer des cases interdites*)
 
@@ -114,13 +120,13 @@ let rec tourne_case m (x : case) =
        then true
     
     else false;;
-
 (*
+
     let test_sont_case_voisines = 
       print_string(string_of_bool (sont_cases_voisines (-2,1,1) (-2,2,0)));
       print_string(string_of_bool (sont_cases_voisines (0,0,0) (0,-1,1)));;
-*)
 
+*)
     let alignement c1 c2 = (*je ne sais pas encore si cette fonction marchent et si elle est nécessaire*)
       let (x,y,z)=c1 in 
       let (x1,y1,z1)= c2 in 
@@ -179,8 +185,8 @@ let rec tourne_case m (x : case) =
       match vec_et_dist (-6, 3, 3) (-4, 3, 1) with
       | ((vx, vy, vz), distance) -> print_string( "Vecteur : (" ^ string_of_int vx ^ "," ^ string_of_int vy ^ "," ^string_of_int vz ^") et la Distance : " ^ string_of_int distance)
       | _ -> print_string "Erreur : Impossible de calculer le vecteur et la distance";;
-
 *)
+
 (*On passe maintenant à la partie 2*)
 
 (* on est le 23/11/2024 et il est 22:38*)
@@ -194,14 +200,20 @@ let rec tourne_liste l=
       tourne_liste [Vert;Jaune;Rouge];;
 *)
 
+
+
 let rec der_liste l= (*je crois qu'il y a une erreur sur la dernière question de son exemple *)
       match l with 
       | [] -> []
       | [x] -> [x]
       | _::q -> der_liste q;;
 
+
+
 (*Le test :
+
       der_liste [2;5;8];;
+
 *)
 
 (*question 12*)
@@ -218,8 +230,8 @@ let rec remplir_segment m (c:case) = (*fonctionne comme c'est demandé*)
 (*Le test:
 
 (remplir_segment 1 (0, 0, 0));;
-(remplir_segment 3 ((-4), 1, 3));;
 
+(remplir_segment 3 ((-4), 1, 3));;
 *)
 
 (*question 13*)
@@ -251,10 +263,18 @@ let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité
     | 0 -> []
     | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_haut (m-1) (i+1,j, k-1);; 
 
+(*!!!!!!
+
+J ene sais pas de quoi il me parle la : "On donnera d’abord des équations récursives définissant cette fonction formalisant l’idée qu’un triangle est composé d’un segment du bas et du triangle
+au-dessus de ce segment"
+
+*)
+
 (*Los testos 
     remplir_triangle_bas 1 (0,0,0);;
     remplir_triangle_bas 3 (-4,1,3);;
 *)
+
 
 
 (*on passe à la question 15*)
@@ -265,14 +285,12 @@ let rec colorie (j : couleur) (liste : case list) : case_coloree list=
     | [] -> []
     | t :: q -> [(t,j)] @ colorie j q;;
 
-
-
-  
 (* q 16 et la 17*)
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
      |[] -> []
       | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
+
 
 
 
@@ -288,10 +306,40 @@ let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= 
           ([((-4, 1, 3), Jaune); ((-4, 2, 2), Jaune); ((-4, 3, 1), Jaune); 
             ((-5, 2, 3), Jaune); ((-5, 3, 2), Jaune); ((-6, 3, 3), Jaune)], 
            [Jaune; Rouge; Bleu; Vert; Noir; Marron]);;
-       
+        
         let config_apres_rotation = tourne_config config_test;;
         
-
+        (* Fonction d'affichage 
+        let afficher_configuration (config : configuration) : unit =
+          let (case_list, couleur_list) = config in
+          Printf.printf "Cases colorées :\n";
+          List.iter (fun ((x, y, z), c) ->
+            Printf.printf "((%d, %d, %d), %s)\n"
+              x y z
+              (match c with
+               | Jaune -> "Jaune"
+               | Rouge -> "Rouge"
+               | Bleu -> "Bleu"
+               | Vert -> "Vert"
+               | Noir -> "Noir"
+               | Marron -> "Marron")
+          ) case_list;
+          Printf.printf "Liste des couleurs :\n";
+          List.iter (fun c ->
+            Printf.printf "%s\n"
+              (match c with
+               | Jaune -> "Jaune"
+               | Rouge -> "Rouge"
+               | Bleu -> "Bleu"
+               | Vert -> "Vert"
+               | Noir -> "Noir"
+               | Marron -> "Marron")
+          ) couleur_list;;
+        
+        (* Affichage *)
+        let () =
+          Printf.printf "Configuration après rotation :\n";
+          afficher_configuration config_apres_rotation;;*)
 
 let liste_joueurs (_, l) = l
 
@@ -310,43 +358,35 @@ let enlever_element element liste =
   List.filter (function x -> x <> element) liste
 ;;
 
-(**)
-let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_coloree list=
-  match liste with 
-    | [] -> []
-    | t :: q -> [(t,j)] @ asso_case_couleur q j;;
 
 
 
+let rec remplir_init_aux liste_joueurs dim rotation_par_joueur rotation_courante : configuration =
+  match liste_joueurs with
+  | [] -> ([], []) 
+  | joueur :: reste_joueurs ->
+      let cases_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
+      let cases_tournees =
+        List.map (fun case -> (tourne_case rotation_courante case, joueur)) cases_de_base
+      in
+      let (cases_restantes, couleurs_restantes) =
+        remplir_init_aux reste_joueurs dim rotation_par_joueur (rotation_courante + rotation_par_joueur)
+      in
+      (cases_tournees @ cases_restantes, joueur :: couleurs_restantes)
+;;
 
-    let rec remplir_init_aux liste_joueurs dim rotation_par_joueur rotation_courante : configuration =
-      match liste_joueurs with
-      | [] -> ([], []) (* config vide *)
-      | joueur :: reste_joueurs ->
-          let cases_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
-          let cases_tournees =
-            List.map (fun case -> (tourne_case rotation_courante case, joueur)) cases_de_base
-          in
-          let (cases_restantes, couleurs_restantes) =
-            remplir_init_aux reste_joueurs dim rotation_par_joueur (rotation_courante + rotation_par_joueur)
-          in
-          (cases_tournees @ cases_restantes, joueur :: couleurs_restantes)
-    ;;
-    
-    let remplir_init liste_joueurs dim : configuration =
-      let nombre_joueurs = List.length liste_joueurs in
-      if nombre_joueurs = 0 || 6 mod nombre_joueurs <> 0 then
-        failwith "Le nombre de joueurs doit être un diviseur de 6 (1, 2, 3, 6)."
-      else
-        let rotation_par_joueur = 6 / nombre_joueurs in
-        remplir_init_aux liste_joueurs dim rotation_par_joueur 0
-    ;;
-    
-    
-    
-          remplir_init [Jaune; Rouge; Marron] 3 ;;
+let remplir_init liste_joueurs dim : configuration =
+  let nombre_joueurs = List.length liste_joueurs in
+  if nombre_joueurs = 0 || 6 mod nombre_joueurs <> 0 then
+    failwith "Le nombre de joueurs doit être un diviseur de 6 (1, 2, 3, 6)."
+  else
+    let rotation_par_joueur = 6 / nombre_joueurs in
+    remplir_init_aux liste_joueurs dim rotation_par_joueur 0
+;;
 
-          let configuration_initial = remplir_init [Vert; Noir; Marron] 3
+
+let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]) 
+
 
 
 (*il me manque la dernière question -> On passe au math*)
@@ -359,7 +399,9 @@ let rec asso_case_couleur (liste : (int*int*int) list) (j : couleur) : case_colo
     (*  let remplir_init listeJoueur (dim:dimension) =(*une configuration prend un paramètre une case color list et une liste de couleur*)
 (*rajouter les dimensions et reprendre la fonction du dessus*)*)
 
+
 (*question 18*)
+
 let quelle_couleur (c:case) (config:configuration) = 
   if not (est_dans_etoile c) then Dehors 
   else
@@ -424,22 +466,7 @@ let supprime_cases (c1 : case) (c2 : case) (config : configuration) : configurat
     verifier_cases_aux c1 (vi, vj, vk) dist case_color_list
   ;;
 
-(* Cas aligné, cases libres *)
-let test1 = est_libre_seg (0, -2, 2) (0, 2, -2) config_test;;
-(* Résultat attendu : true (toutes les cases intermédiaires sont libres) *)
 
-(* Cas aligné, une case occupée *)
-let test2 = est_libre_seg (0, 0, 0) (0, 2, -2) config_test;;
-(* Résultat attendu : false (case (0, 1, -1) est occupée par Bleu) *)
-
-(* Cas aligné, aucune case intermédiaire *)
-let test3 = est_libre_seg (0, 0, 0) (0, -1, 1) config_test;;
-(* Résultat attendu : true (aucune case intermédiaire à vérifier) *)
-
-(* Cas non aligné (mal défini par l'utilisateur) *)
-(* Ce test n'est pas censé arriver si les entrées respectent la spécification *)
-let test4 = est_libre_seg (0, 0, 0) (1, 1, -2) config_test;;
-(* Résultat attendu : Comportement non spécifié car les cases ne sont pas alignées *)
 
 
 
@@ -461,70 +488,83 @@ est_libre_seg (-6,3,3) (-4,1,3) config_test_est_libre;;
 
 (*on suppose la dimension qu'on a pris en compte au début, peut être faire une fonction pour déterminer la dimension en fonction de la config*)
 let est_saut (c1 : case) (c2 : case) (config : configuration) : bool = 
-  (* Vérifie si c2 est dans le losange *)
-  if not (est_dans_losange c2 dim) then false 
+  if not ((est_dans_losange c2 dim)&&(est_dans_losange c1 dim)) then false 
   else 
     let (case_coloree_list, _) = config in
     let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
-    (* Vérifie si la distance est de 2 *)
     if d <> 2 then false
     else
-      (* Calcule la case intermédiaire (pivot) *)
       let (x1, y1, z1) = c1 in
       let (x2, y2, z2) = c2 in
       let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
-      (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
       if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
          not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
         true
       else
         false;;
 
-
-
-
-
-      let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool = 
-        (* Vérifie si c2 est dans le losange *)
-
+        let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool =  
           let (case_coloree_list, _) = config in
           let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
-          (* Vérifie si la distance est de 2 *)
           if d <> 2 then false
           else
-            (* Calcule la case intermédiaire (pivot) *)
             let (x1, y1, z1) = c1 in
             let (x2, y2, z2) = c2 in
             let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
-            (* Vérifie si la case intermédiaire est occupée et si c2 est libre *)
-            if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
-               not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+            if not (est_dans_losange pivot dim) then false
+            else if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+                    not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
               true
             else
               false;;
+        
 
 (*Question 25*)
-let rec est_saut_multiple (case_list : case list) (config : configuration) : bool = 
-      match case_list with 
-      | [] -> true
-      | t :: [] -> if not(est_dans_losange t dim) then false else est_saut_multiple [] config
-      | t1 :: t2 :: q -> if not(est_saut_sans_verif_etoile t1 t2 config) then false 
-                          else est_saut_multiple q config;;
+let rec est_saut_multiple_aux (case_list : case list) (config : configuration) (cases_visitees : case list) : bool =
+  match case_list with
+  | [] -> true  (* Aucun saut à valider *)
+  | [t] -> est_dans_losange t dim  (* Dernière case doit être dans le losange *)
+  | t1 :: t2 :: q ->
+      (* Vérifie si le saut entre t1 et t2 est valide *)
+      let (case_coloree_list, _) = config in
+      let config_simulee = (case_coloree_list @ List.map (fun c -> (c, Libre)) cases_visitees, []) in
+      if not (est_saut t1 t2 config_simulee) then 
+        false
+      else
+        (* Ajoute t1 aux cases visitées et vérifie les sauts restants *)
+        est_saut_multiple_aux (t2 :: q) config (t1 :: cases_visitees);;
+
+let est_saut_multiple (case_list : case list) (config : configuration) : bool =
+  est_saut_multiple_aux case_list config [];;
 
 
-let est_coup_valide (config:configuration) (coup:coup) =
-  match coup with
-    | Du(c1, c2) -> 
-      let couleurC2 =quelle_couleur c2 config in 
-      let couleurC1= quelle_couleur c1 config in
-      let couleur_joueur = List.hd (liste_joueurs config) in
-        if sont_cases_voisines c1 c2 && est_dans_losange c2 dim && couleurC2=Libre && couleurC1=couleur_joueur then true
-            (*si elles sont voisines*)
-                              (*comment vérifier si il s'agit du pion du joueur ?*)
-      else 
-        if est_saut c1 c2 config then true
-        else false
-      | Sm casesListes-> est_saut_multiple casesListes config;;
+
+
+
+
+
+      let est_coup_valide (config:configuration) (coup:coup) =
+        match coup with
+        | Du(c1, c2) -> 
+            let couleurC2 = quelle_couleur c2 config in 
+            let couleurC1 = quelle_couleur c1 config in
+            let couleur_joueur = List.hd (liste_joueurs config) in
+            (* Vérification des conditions pour un déplacement simple *)
+            if sont_cases_voisines c1 c2 && est_dans_losange c2 dim && couleurC2 = Libre && couleurC1 = couleur_joueur then true
+            else 
+              (* Vérification des conditions pour un saut *)
+              if est_saut c1 c2 config && couleurC1 = couleur_joueur then true
+              else false
+        | Sm casesListes -> 
+            (* Vérification des conditions pour un saut multiple *)
+            if casesListes = [] then false
+            else 
+              (* Vérifier que le premier élément de la liste correspond à la couleur du joueur *)
+              let couleur_premiere_case = quelle_couleur (List.hd casesListes) config in
+              let couleur_joueur = List.hd (liste_joueurs config) in
+              if couleur_premiere_case <> couleur_joueur then false
+              else est_saut_multiple casesListes config;;
+      
           
 let rec applique_coup config coup =
   match coup with
@@ -557,15 +597,12 @@ let mis_a_jour_configuration config coup =(*On doit expliquer l'erreur s'il y en
             if not (couleurC1=couleur_joueur) then Error "Le pion avec lequel on a voulu partir n'appartient pas au joueur"
             else if not (sont_cases_voisines c1 c2) then Error "Les cases ne sont pas voisines"
             else if not (est_dans_losange c2 dim) then Error "La case où on souhaite se déplacer n'appartient pas aux losanges"
-            else Error "Ce coup n'est pas valide, la case d'arrivéest occupé"
+            else Error "Ce coup n'est pas valide, la case d'arrivée est occupé"
       | _ -> Error "La liste de case donnée n'est pas bonne";;
 
-      let gagnant (config: configuration) : bool =
-        (* Implémentez ici la logique pour déterminer si un joueur a gagné *)
-        false
-            let coup_possible _ _  = [];;
-            let ia_next_coup (config: configuration) : coup * string =
-              let coup = Sm [] in (* Implémentez ici la logique de calcul du coup *)
-              let description = "Coup généré par ia_next_coup" in
-              (coup, description)
-            
+let gagnant _ = false;;
+let coup_possible _ _  = [];;
+let ia_next_coup _  = 
+    let coup = Sm [] in
+    let description = "Coup généré par ia_next_coup" in
+        (coup, description);;
