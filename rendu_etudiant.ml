@@ -196,9 +196,9 @@ let rec tourne_liste l=
       | [] -> [] 
       |[x] -> []
       | x::q -> q @ [x];;
-(*Le test
-      tourne_liste [Vert;Jaune;Rouge];;
-*)
+
+      tourne_liste [Vert;Jaune;Rouge; Bleu; Marron; Noir];;
+
 
 
 
@@ -286,10 +286,15 @@ let rec colorie (j : couleur) (liste : case list) : case_coloree list=
     | t :: q -> [(t,j)] @ colorie j q;;
 
 (* q 16 et la 17*)
+let rec tourne_case1 m (x:case)=
+let (a, b, c)=x in 
+if m mod 6 =0 then x
+else  tourne_case1 (m-1) (-c,-a,-b);;
+
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
      |[] -> []
-      | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
+      | (case, couleur)::q -> (tourne_case1 angle case, couleur)::tourne_config_aux q angle;;
 
 
 
@@ -385,7 +390,7 @@ let remplir_init liste_joueurs dim : configuration =
 ;;
 
 
-let configuration_initial = ([], [ Vert; Jaune; Rouge; Noir; Bleu; Marron ]) 
+let configuration_initial = remplir_init [Vert; Marron; Bleu;Rouge ;Noir;Jaune] 3;;
 
 
 
@@ -600,9 +605,403 @@ let mis_a_jour_configuration config coup =(*On doit expliquer l'erreur s'il y en
             else Error "Ce coup n'est pas valide, la case d'arrivée est occupé"
       | _ -> Error "La liste de case donnée n'est pas bonne";;
 
-let gagnant _ = false;;
-let coup_possible _ _  = [];;
-let ia_next_coup _  = 
-    let coup = Sm [] in
-    let description = "Coup généré par ia_next_coup" in
-        (coup, description);;
+
+            
+
+(*troisième partie*)
+  
+
+(*pour calculer le score, il suffit de sommer les (i) de chacun de ses valeurs*)
+
+
+
+
+(*La partie que théo vient de m'envoyer*)
+
+
+
+
+
+
+
+
+
+(*ma partie à moi*)
+
+let rec score_aux (config:configuration) couleur = (*on cherche les éléments dans la configuration ayant cette valeur*)
+          match fst config with (*permet d'avoir la première partie =first*)
+          | [] -> 0
+          | ((case, coul)::q) when coul=couleur -> let (i, j, k)=case in i+score_aux (q, snd config) couleur (*=second*)
+          | (_::q) -> score_aux (q, snd config) couleur;;
+          
+          
+          (*q 27*)
+let score config =
+  match liste_joueurs config with
+   | [] -> 0 (* la liste est vide donc ne contient rien*)
+   | couleur_protagoniste::_ ->score_aux config couleur_protagoniste;;
+
+
+   
+  let rec score_total config liste = (*il s'agit de la liste des couleurs de tous les joueurs*)
+    match liste with
+    | [] -> []
+    | t::q->   let score_t = score config in let cf = tourne_config config in  score_t :: score_total cf q;;      (*cf devrait être de type config et on aurait pas le soucis*)                                              (*il faut tourner le plateau et faire appel à l'autre fonction *)
+
+(*q 28*)
+    let rec gagnant_aux max liste=
+    match liste with 
+    | []-> false
+    | [x] when x>max -> true
+    | [x] when x<max -> false
+    | t::q -> if (t>max) then gagnant_aux t q else gagnant_aux max q;;
+
+let gagnant (config:configuration) = gagnant_aux 0 (score_total config (liste_joueurs config)) ;;
+
+let directions = [ (1, -1, 0); (-1, 1, 0); (1, 0, -1); (-1, 0, 1); (0, 1, -1); (0, -1, 1) ] ;; (*il s'agit de toutes les directions dans lequel le joueur peut aller*)
+
+
+(*pour les coups uniques*)
+let listeDeplacementUnitaire_aux (config: configuration) (caseInitial: case) directions : (case * coup) list = (*essayer de simplifier cette fonction*)
+  List.fold_left (fun acc direction ->
+    let caseSuivante = translate caseInitial direction in
+    let coup = Du(caseInitial, caseSuivante) in
+    if est_coup_valide config coup then
+      (caseSuivante, coup) :: acc
+    else
+      acc) [] directions;;
+
+let listeDeplacementUnitaire (config: configuration) (caseInitial: case) : (case * coup) list =
+  listeDeplacementUnitaire_aux config caseInitial directions;;
+
+
+(*Le tri faut le faire ensuite ou maintenant ?*)
+
+(*on cherche les erreurs dans le code*)
+
+
+
+let rec listeDeplacementMultiple_aux (config: configuration) (caseInitial: case) (listeCasesUtilisees: case list) directions : (case * coup) list =
+  match directions with
+  | [] -> []
+  | direction :: reste ->
+      let caseSuiv = translate caseInitial direction in
+      let couleurSuiv = quelle_couleur caseSuiv config in
+      if couleurSuiv <> Libre && not (List.mem caseSuiv listeCasesUtilisees) then
+        let caseSuivSuiv = translate caseSuiv direction in
+        let couleurSuivSuiv = quelle_couleur caseSuivSuiv config in
+        if couleurSuivSuiv = Libre && est_dans_etoile caseSuivSuiv && not (List.mem caseSuivSuiv listeCasesUtilisees) then
+          let nouveauCoup = Sm (caseInitial :: caseSuivSuiv :: listeCasesUtilisees) in
+          if est_coup_valide config nouveauCoup then
+            (caseSuivSuiv, nouveauCoup)
+            :: listeDeplacementMultiple_aux config caseInitial (caseSuivSuiv :: listeCasesUtilisees) directions
+          else
+            listeDeplacementMultiple_aux config caseInitial listeCasesUtilisees directions
+        else
+          listeDeplacementMultiple_aux config caseInitial listeCasesUtilisees directions
+      else
+        listeDeplacementMultiple_aux config caseInitial listeCasesUtilisees reste;;
+
+let listeDeplacementMultiple (config: configuration) (caseInitial: case) : (case * coup) list =
+  listeDeplacementMultiple_aux config caseInitial [] directions;;
+
+
+        (*on simplifie l'appelle de cette fonction*)
+
+
+
+(*
+  let rec listeDeplacementMultiple_aux (config: configuration) (caseInitial:case)  listeCasesUtilisées listeDirection : (case*coup) list =(*il s'agit des coups en ne suivant admettant qu'on p*)
+    match listeDirection with
+    | [] -> [] (*on a exploré toutes les directions dans ce cas*)
+    | t::q -> (*on a encore des directions à explorer*)
+        match listeCasesUtilisées with 
+        | _::listeCaseUtiliséesTotal -> (*la liste n'est pas vide, et il faut explorer les directions en partant de la tête de la liste*)
+            let caseActuelle = List.hd listeCaseUtiliséesTotal in
+            let caseSuiv=translate caseActuelle t in (*il faudrait l'appliquer 2 fois pour avoir le suivant, *)
+            let couleurSuiv=quelle_couleur caseSuiv config in 
+            match couleurSuiv with
+            | Libre -> listeDeplacementMultiple_aux config caseInitial [] q(*dans ce cas la pas de pivot, et il faut continuer à chercher dans la suite des directions*)
+            | _ -> let caseSuivSuiv =translate caseSuivS t in let couleurSuivSuiv=quelle_couleur caseSuivSuiv config in 
+              match couleurSuivSuiv with
+              | Libre -> (caseSuivSuiv, Du(caseInitial, caseSuivSuiv))::listeDeplacementMultiple_aux config caseInitial (caseSuivSuiv::listeCasesUtilisées) directions (*on peut appliquer notre pivot, et on ajoute listeCaseUtilisées*)(*on peut tous les reprendre donc j'appelle direction*)
+              | _ -> listeDeplacementMultiple_aux config caseInitial listeCasesUtilisées q (*on ne peut rien faire, om fait retourner en arrierer et changer de pivot*)
+        | [] -> let caseActuelle=caseInitial in let caseSuiv=translate caseActuelle t in (*il faudrait l'appliquer 2 fois pour avoir le suivant, *)
+        let couleurSuiv=quelle_couleur caseSuiv config in 
+        match couleurSuiv with
+        | Libre -> listeDeplacementMultiple_aux config caseInitial [] q(*dans ce cas la pas de pivot, et il faut continuer à chercher dans la suite des directions*)
+        | _ -> let caseSuivSuiv =translate caseSuiv t in let couleurSuivSuiv=quelle_couleur caseSuiv config in 
+          match couleurSuivSuiv with
+          | Libre -> (caseSuivSuiv, Du(caseInitial, caseSuivSuiv))::listeDeplacementMultiple_aux config caseInitial (caseSuivSuiv::listeCasesUtilisées) directions (*on peut appliquer notre pivot, et on ajoute listeCaseUtilisées*)(*on peut tous les reprendre donc j'appelle direction*)
+          | _ -> listeDeplacementMultiple_aux config caseInitial listeCasesUtilisées q (*on ne peut rien faire, om fait retourner en arrierer et changer de pivot*)
+
+        | (*lorsque c'est vide, on peut utiliser *)
+*)  
+  (*on fait 3 autres fonctions :
+    -> saut unique
+    ->plusieurs saut
+    ->on trie les coups qui se répètent
+    *)
+(*On pourrait faire une fonction qui regarde si 1 est possible 1.1, 1.1.1, ..., 1.2, ..., une sorte d'abre*)
+
+
+
+ (*pourquoi il peut y avoir une infinité de coup ? si on effectue différent coup toutes les cases du losange sont atteignables ?*)
+(*on doit renvoyer une liste de coup possible, fonction clé*)
+
+
+let coup_possible (config:configuration) (caseInitial:case) = 
+  let listeCoupUnique=listeDeplacementUnitaire config caseInitial in
+  let listeCoupPlusieurs=listeDeplacementMultiple config caseInitial in 
+  listeCoupUnique  @ listeCoupPlusieurs ;;
+
+
+coup_possible configuration_initial (0,0,0);; (*est ce que ca fais ce qui est attendu ? comment pourrais-je le vérifier ?*)
+(*q 30 -Avant de faire quoique ce soit de compliqué, on va prendre une fonction qui choisit au hasard un pion
+  -> il faut seulement qu'il y ait un coup possible et elle l'appliquera
+
+  -> On regarde ensuite comment on peut choisir l'option qui permet d'augmenter le plus le score
+
+
+*)
+
+
+
+let rec case_bonne_couleur (config:configuration) = (*renvoie toutes les cases de la bonne couleur*)
+  let couleur=List.hd (snd config) in 
+  match fst config with
+  | ([]) -> []
+  | ((case, coul)::q) -> 
+    if coul=couleur then case::case_bonne_couleur (q, snd config) else case_bonne_couleur(q, snd config);;
+
+
+    let rec prendreElementAN liste n = (*on suppose que la liste n'est pas vide, on accepte la surlignance jaune*)
+    match liste with
+    | t::q -> 
+      match n with
+      |  0 -> t
+      | z -> prendreElementAN q (z-1) ;;
+
+      let next_coup_ia1 (config: configuration) : coup = (* cette fonction renvoie un coup valide que le joueur peut faire *)
+      let listeCasesPossibles = case_bonne_couleur config in (* on a toutes les cases sur lesquelles on peut effectuer quelque chose *)
+      let nombreHasardPourCase = Random.int (List.length listeCasesPossibles) in 
+      let caseChoisie = prendreElementAN listeCasesPossibles nombreHasardPourCase in
+      let listeCoup = List.map snd (coup_possible config caseChoisie) in (* extrait les coups possibles de la case choisie *)
+      let nombreHasardPourCoup = Random.int (List.length listeCoup) in 
+      prendreElementAN listeCoup nombreHasardPourCoup ;;(* retourne un élément de type `coup` parmi les coups possibles *)
+    
+      (*
+let next_coup_ia1 (config:configuration) :coup = (*cette fonction renvoie un coup valide que le joueur peut faire*)
+    let listeCasesPossibles=case_bonne_couleur config in (*on a toutes les cses sur lequel on peut effectuer qqch*)
+    let nombreHasardPourCase = Random.int (List.length  listeCasesPossibles) in 
+    let caseChoisie=prendreElementAN listeCasesPossibles nombreHasardPourCase in
+    let listeCoup =snd ( coup_possible config caseChoisie) in
+    let nombreHasardPourCoup = Random.int (List.length listeCoup) in
+    prendreElementAN listeCoup nombreHasardPourCoup;;*)
+
+
+
+
+(*Est ce que maintenant on peut essayer de prendre le mouvement qui agrandit le plus notre score ?, on fera ensuite l'algo de MinMax puis on ajoutera l'"Alpha-Beta Prunning" ? *)
+
+(*on suppose connnaitre la case et on essaie de voir le coup qui augmente le plus le score de ce joueur*)
+
+(*Ce serait sympa si elle me renvoyait la valeur d'augmentation pour que je puisse choisir quelle est la meilleure case*)
+
+
+
+
+let rec meilleurCaseAChoisir_aux (config:configuration) (valeurMeilleurcoup:int) (meilleurCoup:coup) listesCasesPossible : coup =
+  match listesCasesPossible with 
+  | [] -> meilleurCoup
+  | casePossibles::casesRestantes -> 
+    
+    let scoreInitial=score config in 
+    let listeCoup =List.map snd (coup_possible config casePossibles) in
+
+    let coup_defaut = match listeCoup with
+    | [] -> meilleurCoup (*il n'y en a pas de dispo*)
+    | premierCoup::_ -> premierCoup 
+    in
+    let (coup, score)=meilleurCoupSurLaCase config casePossibles scoreInitial min_int coup_defaut listeCoup in 
+      if (score>valeurMeilleurcoup) then meilleurCaseAChoisir_aux config score coup casesRestantes 
+      else  meilleurCaseAChoisir_aux config valeurMeilleurcoup meilleurCoup casesRestantes and 
+
+
+  meilleurCoupSurLaCase (config:configuration) (caseInitial:case) (scoreInitial:int) (maxAugmentationScore:int) (meilleurCoup1:coup) (listeCoup): (coup*int) =
+      match listeCoup with 
+      | [] -> (meilleurCoup1, maxAugmentationScore)
+      | coup::listeRestanteDeCoup ->
+        let configPossible= applique_coup config coup in let augmentationDeCeCoup=(score configPossible)-scoreInitial in 
+          if augmentationDeCeCoup>maxAugmentationScore then meilleurCoupSurLaCase config caseInitial scoreInitial augmentationDeCeCoup coup listeRestanteDeCoup
+          else meilleurCoupSurLaCase config caseInitial scoreInitial maxAugmentationScore meilleurCoup1 listeRestanteDeCoup;;
+
+    let next_coup_ia2 (config:configuration) (valeurMeilleurcoup:int) (meilleurCoup:coup) listesCasesPossible : coup = (*comment on fait si aucun coup n'est disponible ? même s'il devrait toujours il y en avoir un*)
+    let listesCasesPossible= case_bonne_couleur config in
+    match  listesCasesPossible with 
+    | [] -> failwith "aucune case n'a eté trouvé"
+    | case::_ -> 
+    let listecoup_defaut=coup_possible config case in (*au coup ou la liste soit nulle*)
+    match listecoup_defaut with
+    | [] -> failwith "la liste des coups possibles est vide pour cette couleur"
+    | (case, coup)::q ->           meilleurCaseAChoisir_aux config valeurMeilleurcoup coup listesCasesPossible;;
+
+
+
+(*comment peut-on construire un algorithme de minmax*)          
+
+(*
+          Arbre décisionnelle
+            -> On évalue toutes les possibilités avec une certaine profondeur
+            -> On commence à regarder par les feuilles, si ce n'est pas a moi de joueur, je regarde quel cas m'arrange le plus (on le minimise en supposant qu'il joue parfaitement)
+            ->Si c'est à moi de joueur, je regarde quel cas m'arrange le plus
+
+            ->Je choisis le cas le + favorable
+
+
+            Comment faire un arbre de recherche ? Quelle profondeur (2-3 ?) ? Comment l'optimiser en passant certaines situations qui ne sont pas utiles ?
+            Pourrait-on lui donner des jeux déja fait, quelle analyse le jeu et qu'elle en fasses qqch ? (réseaux neuronnales ?)
+
+*)
+
+(*
+Fonction Minimax(etat, profondeur, joueur)
+  Si profondeur = 0 ou etat est terminal
+    Retourner score(etat)
+
+  Si joueur = MAX
+    MeilleurScore = -∞
+    Pour chaque coup dans coups_possibles(etat)
+      NouvelEtat = applique_coup(etat, coup)
+      Score = Minimax(NouvelEtat, profondeur - 1, MIN)
+      MeilleurScore = max(MeilleurScore, Score)
+    Retourner MeilleurScore
+
+  Sinon (joueur = MIN)
+    MeilleurScore = +∞
+    Pour chaque coup dans coups_possibles(etat)
+      NouvelEtat = applique_coup(etat, coup)
+      Score = Minimax(NouvelEtat, profondeur - 1, MAX)
+      MeilleurScore = min(MeilleurScore, Score)
+    Retourner MeilleurScore
+*)
+
+
+
+(*on commence à l'implémenter et ensuite, on regarde la suite des probas*)
+
+let rec tous_les_coups_possibles_aux (config:configuration) liste = (*nous renvoie tous les coups possibles*)(*renvoie la case à laquelle on applique une liste*)
+      match liste with 
+      | [] -> []
+      | case::listesDeCases -> coup_possible config case::tous_les_coups_possibles_aux config listesDeCases;;
+
+let tous_les_coups_possibles_aux (config:configuration) = tous_les_coups_possibles_aux config (case_bonne_couleur config);;
+
+
+(*On a sur le github le fichier, on peut essayer de le "prunner" avec un Alpha et un Beta*)
+
+let rec evaluer_coups (config: configuration) (profondeur: int) (alpha:int) (beta:int) 
+joueur_max joueur_actuel listecoup (meilleur_score, meilleur_coup) =
+
+  match listecoup with
+  | [] -> (meilleur_score, meilleur_coup) (* Aucun coup à évaluer *)
+  | coup :: reste ->
+      (* Applique le coup et évalue la configuration suivante *)
+      let nouvelle_config = applique_coup config coup in
+      let score, _ =
+        algoMinMax nouvelle_config (profondeur - 1) joueur_max 
+          (List.hd (liste_joueurs nouvelle_config)) alpha beta
+      in
+      (* Mise à jour du meilleur score et coup en fonction du joueur *)
+      let (nouveau_meilleur_score, nouveau_meilleur_coup, alpha, beta) = (*on cherche à maximiser pour nous*)
+        if joueur_actuel = joueur_max then
+
+          (*On prend le alpha*)
+          let alpha=max alpha score in (*sympa il connait la fonction*)
+
+
+          (* Maximisation pour le joueur MAX *)
+          if score > meilleur_score then (score, Some coup, alpha, beta) else (meilleur_score, meilleur_coup, alpha, beta)
+        else
+          (* joueur adverse, on prend le min *)
+          let beta=min beta score in
+          if score < meilleur_score then (score, Some coup, alpha, beta) else (meilleur_score, meilleur_coup, alpha, beta)
+      in
+      (*on doit comparer l'alpha et le beta*)
+      if (alpha>=beta) then (nouveau_meilleur_score, nouveau_meilleur_coup) (*ce qui permet de limiter les opérations à faire*)
+      else evaluer_coups config profondeur alpha beta joueur_max joueur_actuel reste
+      (nouveau_meilleur_score, nouveau_meilleur_coup)
+
+
+and algoMinMax (config: configuration) (profondeur: int) 
+    joueur_max joueur_actuel (alpha:int) (beta:int) : (int * coup option) =
+  if profondeur = 0 || gagnant config then
+    (* Retourne le score pour la configuration courante *)
+    (score_aux config joueur_max, None)
+  else
+    let coups_possibles =
+      List.concat (List.map (List.map snd) (tous_les_coups_possibles_aux config)) 
+    in
+    if coups_possibles = [] then
+      (* Aucun coup possible, retourne le score actuel *)
+      (score_aux config joueur_max, None)
+    else
+      (* Initialise le score pour la maximisation/minimisation *)
+      let initial_score = if joueur_actuel = joueur_max then min_int else max_int in
+      evaluer_coups config profondeur alpha beta joueur_max joueur_actuel coups_possibles 
+        (initial_score, None);;
+
+let ia_next_coup config = (*3 le faisait tourner trop longtemps, je vais essayer avec 1. Est ce qu'on a une boucle infinie*)
+  let tete = List.hd (liste_joueurs config) in  
+  let coup_possible =     List.concat (List.map (List.map snd) (tous_les_coups_possibles_aux config)) in (*est ce qu'on pourrait simplifier cette fonction ? ou la créer nous même, je l'aime pas*)
+  match coup_possible with
+  | [] -> failwith "aucun coup possible pour l'IA" (*ça ne devrait pas arriver*)
+  | x -> 
+    let (_, meilleur_coup)= evaluer_coups config 1 min_int max_int tete tete coup_possible (min_int, None) in
+    match meilleur_coup with 
+    | None -> failwith "erreur dans le calcul du meilleur coup"
+    |Some coup->(coup,"");; (*je ne sais pas pourquoi il demande que la fonction renvoie ce type la qui est contraire à l'énoncé*)
+
+
+(*On va le tester à la main parce que ça ne fonctionne pas*)
+
+
+
+(*on fait un affichage simple pour pouvoir afficher les coups proposés*)
+
+
+let string_case (case:case): string=
+    let (x,y,z) =case in "("^string_of_int x^";"^string_of_int y^";"^string_of_int z^")";;
+
+
+    let string_coup_aux coup =
+      match coup with
+      | Du (case1, case2) ->
+          "Déplacement unique de la case " ^ string_case case1 ^ " à la case " ^ string_case case2 ^ ".\n"
+      | Sm cases ->
+          "Saut multiple à travers les cases : " ^
+          (String.concat " -> " (List.map string_case cases)) ^ ".\n"
+    
+  
+
+
+(*on a notre fonction d'affichage, on va tester chacun de nos coups pour voir s'ils fonctionnent, on se met en parallèle l'écran de jeu*)
+let configurationDepartTest  =configuration_initial;;
+
+
+
+let test_ia config =
+  let (coup, _)=ia_next_coup config in string_coup_aux coup;;
+
+
+   let _ = print_string (test_ia configuration_initial);;
+
+
+
+
+
+
+(*Optimiser ? Utiliser Owl ? Réseau neuronnal ? Améliore toi*)
+
+
+
