@@ -196,9 +196,9 @@ let rec tourne_liste l=
       | [] -> [] 
       |[x] -> []
       | x::q -> q @ [x];;
-(*Le test
-      tourne_liste [Vert;Jaune;Rouge];;
-*)
+
+      tourne_liste [Vert;Jaune;Rouge; Bleu; Marron; Noir];;
+
 
 
 
@@ -286,10 +286,15 @@ let rec colorie (j : couleur) (liste : case list) : case_coloree list=
     | t :: q -> [(t,j)] @ colorie j q;;
 
 (* q 16 et la 17*)
+let rec tourne_case1 m (x:case)=
+let (a, b, c)=x in 
+if m mod 6 =0 then x
+else  tourne_case1 (m-1) (-c,-a,-b);;
+
 let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
     match liste with 
      |[] -> []
-      | (case, couleur)::q -> (tourne_case angle case, couleur)::tourne_config_aux q angle;;
+      | (case, couleur)::q -> (tourne_case1 angle case, couleur)::tourne_config_aux q angle;;
 
 
 
@@ -385,7 +390,7 @@ let remplir_init liste_joueurs dim : configuration =
 ;;
 
 
-let configuration_initial = remplir_init [Vert; Marron; Bleu;Rouge ;Noir;Jaune] 3;;
+let configuration_initial = remplir_init [Vert; Marron; Noir] 3;;
 
 
 
@@ -503,32 +508,71 @@ let est_saut (c1 : case) (c2 : case) (config : configuration) : bool =
       else
         false;;
 
-        let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool =  
-          let (case_coloree_list, _) = config in
-          let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+
+(* (*ancienne  version qui marche à moitié, on peut écraser les pions en chemin et même les utiliser en tant que pivot meme si != Libre *)
+let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool =          
+  let (case_coloree_list, _) = config in
+  let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
           if d <> 2 then false
           else
             let (x1, y1, z1) = c1 in
             let (x2, y2, z2) = c2 in
-            let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
-            if not (est_dans_losange pivot dim) then false
-            else if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
-                    not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+            let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in 
+
+(*ici, on enlève la condition qui permet de verifier que la case est bien dans l'élément*)
+
+            
+            if List.exists (fun (case, _) -> case = pivot) case_coloree_list 
+                  (* && not (List.exists (fun (case, _) -> case = c2) case_coloree_list)*) then
               true
             else
               false;;
         
 
+*)
+
+(*On tente une nouvelle version*)
+
+
+let est_saut_sans_verif_etoile (c1 : case) (c2 : case) (config : configuration) : bool = 
+    let (case_coloree_list, _) = config in
+    let ((vi, vj, vk), d) = vec_et_dist c1 c2 in
+    if d <> 2 then false
+    else
+      let (x1, y1, z1) = c1 in
+      let (x2, y2, z2) = c2 in
+      let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+      if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+         not (List.exists (fun (case, _) -> case = c2) case_coloree_list) then
+        true
+      else
+        false;;
+
+
+
+
+
+    
+
+
 (*Question 25*)
+(*on ne doi tpas vérifier si la premiere et la dernière case sont bien dans le losange*)
+(*on va devoir le vérifier, dans "est_coup_valide"*)
 let rec est_saut_multiple_aux (case_list : case list) (config : configuration) (cases_visitees : case list) : bool =
   match case_list with
   | [] -> true  (* Aucun saut à valider *)
   | [t] -> est_dans_losange t dim  (* Dernière case doit être dans le losange *)
   | t1 :: t2 :: q ->
-      (* Vérifie si le saut entre t1 et t2 est valide *)
+      (* Vérifie si le saut entre t1 et t2 est valide *)(*on doit aussi vérifier si les deux cases sont livres*)
       let (case_coloree_list, _) = config in
       let config_simulee = (case_coloree_list @ List.map (fun c -> (c, Libre)) cases_visitees, []) in
-      if not (est_saut t1 t2 config_simulee) then 
+
+(*on vérifie que les deux couleurs sont bonnes*)
+ 
+
+
+
+      if not (est_saut_sans_verif_etoile t1 t2 config_simulee) then 
         false
       else
         (* Ajoute t1 aux cases visitées et vérifie les sauts restants *)
@@ -537,6 +581,16 @@ let rec est_saut_multiple_aux (case_list : case list) (config : configuration) (
 let est_saut_multiple (case_list : case list) (config : configuration) : bool =
   est_saut_multiple_aux case_list config [];;
 
+
+
+let premierListe liste = (*on sait que la liste n'est pas vide*)
+  match liste with
+  | t::q -> t;;
+
+let  rec dernierListe liste =
+  match liste with
+  | t::[]-> t
+  | t::q -> dernierListe q;;
 
 
 
@@ -559,11 +613,15 @@ let est_saut_multiple (case_list : case list) (config : configuration) : bool =
             (* Vérification des conditions pour un saut multiple *)
             if casesListes = [] then false
             else 
-              (* Vérifier que le premier élément de la liste correspond à la couleur du joueur *)
-              let couleur_premiere_case = quelle_couleur (List.hd casesListes) config in
-              let couleur_joueur = List.hd (liste_joueurs config) in
-              if couleur_premiere_case <> couleur_joueur then false
-              else est_saut_multiple casesListes config;;
+              let cPremier =premierListe casesListes in
+              let cDernier=dernierListe casesListes in 
+              if (est_dans_losange cPremier dim && est_dans_losange cDernier dim && quelle_couleur cDernier config = Libre) then 
+                (* Vérifier que le premier élément de la liste correspond à la couleur du joueur *)
+                let couleur_premiere_case = quelle_couleur (List.hd casesListes) config in
+                let couleur_joueur = List.hd (liste_joueurs config) in
+                if couleur_premiere_case <> couleur_joueur then false
+                else est_saut_multiple casesListes config
+              else false;;
       
           
 let rec applique_coup config coup =
