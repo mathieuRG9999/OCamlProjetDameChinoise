@@ -199,8 +199,10 @@ let rec tourne_liste l=
       |[x] -> []
       | x::q -> q @ [x];;
 
-      tourne_liste [Vert;Jaune;Rouge; Bleu; Marron; Noir];;
 
+      (*
+      tourne_liste [Vert;Jaune;Rouge; Bleu; Marron; Noir];;
+*)
 
 
 
@@ -302,6 +304,7 @@ let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= 
     | _ -> let gN=6/List.length couleur_list in (*pour remettre le 'N' de l'énoncé*)
         (tourne_config_aux case_list gN,tourne_liste couleur_list);;
 
+        (*
 
         let config_test = 
           ([((-4, 1, 3), Jaune); ((-4, 2, 2), Jaune); ((-4, 3, 1), Jaune); 
@@ -309,7 +312,7 @@ let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= 
            [Jaune; Rouge; Bleu; Vert; Noir; Marron]);;
         
         let config_apres_rotation = tourne_config config_test;;
-        
+  *)      
 
 
 let liste_joueurs (_, l) = l;;
@@ -630,7 +633,7 @@ match liste with
 
 (*je ne sais pas à quoi ces deux fonction servent*)
 let guess_dim (config : configuration) = let (liste_case_coloree,_) = config in 
-let dim = List.fold_left (fun acc ((i, _, _), _) -> max acc i) min_int liste_case_coloree in dim/2
+let dim = List.fold_left (fun acc ((i, _, _), _) -> max acc i) min_int liste_case_coloree in dim/2;;
 
 
 let gagnant (config : configuration) : bool = 
@@ -647,7 +650,7 @@ let gagnant (config : configuration) : bool =
 
 (*ma partie à moi*)
 
-let rec score_aux (config:configuration) couleur = (*on cherche les éléments dans la configuration ayant cette valeur*)
+(*let rec score_aux (config:configuration) couleur = (*on cherche les éléments dans la configuration ayant cette valeur*)
           match fst config with (*permet d'avoir la première partie =first*)
           | [] -> 0
           | ((case, coul)::q) when coul=couleur -> let (i, j, k)=case in i+score_aux (q, snd config) couleur (*=second*)
@@ -680,7 +683,7 @@ let score config =
 
 let gagnant (config:configuration) = gagnant_aux 0 (score_total config (liste_joueurs config)) ;;
 
-gagnant configuration_initial;;
+gagnant configuration_initial;;*)
 
 let directions = [ (1, -1, 0); (-1, 1, 0);
  (1, 0, -1); (-1, 0, 1); (0, 1, -1); (0, -1, 1) ] ;; (*il s'agit de toutes les directions dans lequel le joueur peut aller*)
@@ -926,7 +929,7 @@ tous_les_coups_possibles configSautMultiple;;
 
 
 (*on va trier les coups pour voir *)
-
+(*
 let rec bubbleSortScore (liste:(coup*case) list) (config:configuration) (nb:int)=(*on trie en fonction du score*)
     match liste with 
     | [] -> if nb=0 then [] else bubbleSortScore liste config (nb-1)
@@ -948,7 +951,7 @@ let heuristique config = (*on trie les coups pour que les meilleurs ressortent e
 
 
 heuristique configuration_initial;;
-
+*)
 
 (*on va tester si tous els coups possibles fonctionne*)
 
@@ -998,87 +1001,7 @@ let score_joueur (config: configuration) (couleur: couleur) : int =
 
   
 
-(* Fonction pour évaluer les coups *)
-let rec evaluer_coups (config: configuration) (profondeur: int) (alpha:int) (beta:int) 
-joueur_max joueur_actuelListe (listecoup:(coup *case) list) (meilleur_score, meilleur_coup) = (*on regarde d'abord le cas de seulement 2 joueurs et après on va prendre les autres cas*)
 
-  match listecoup with
-  | [] -> (meilleur_score, meilleur_coup) (*aucun coup à évaluer *)
-  | (coup_candidat, case_arrivee ) :: reste ->
-      (* Applique le coup et évalue la configuration suivante *)
-      let nouvelle_config = applique_coup config coup_candidat in
-
-
-    let joueur_actuel = List.hd joueur_actuelListe  in
-    let joueur_actuelListe1 = tourne_liste joueur_actuelListe in 
-    let joueur_prochain=List.hd joueur_actuelListe in 
-
-
-      let (score_obtenu, coup_choisi) =
-        algoMinMax nouvelle_config (profondeur - 1) joueur_max 
-        joueur_actuelListe1 alpha beta
-      in
-
-
-      if joueur_actuel = joueur_max then 
-        let alpha_a_jour=max alpha score_obtenu in 
-        if score_obtenu > meilleur_score then
-          let meilleur_coup1 =Some coup_candidat in
-          if alpha_a_jour>=beta then
-            (score_obtenu, meilleur_coup1) (*ce qui permet de couper la recherche*) 
-          else 
-            evaluer_coups config profondeur alpha_a_jour beta joueur_max joueur_actuelListe1 reste (score_obtenu, meilleur_coup1)
-        else  (*dans ce cas la pas de nouveauté*)
-          (* Pas d’amélioration du meilleur_score actuel *)
-          if alpha_a_jour >= beta then
-            (meilleur_score, meilleur_coup)
-          else
-            evaluer_coups
-              config profondeur alpha_a_jour beta
-              joueur_max joueur_actuelListe1
-              reste
-              (meilleur_score, meilleur_coup)
-
-            else
-              (* --- Phase de MIN (adversaire) --- *)
-              let beta_mis_a_jour = min beta score_obtenu in
-              if score_obtenu < meilleur_score then
-                let nouveau_meilleur_coup = Some coup_candidat in
-                if alpha >= beta_mis_a_jour then
-                  (score_obtenu, nouveau_meilleur_coup)
-                else
-                  evaluer_coups
-                    config profondeur alpha beta_mis_a_jour
-                    joueur_max joueur_actuelListe1
-                    reste
-                    (score_obtenu, nouveau_meilleur_coup)
-              else
-                if alpha >= beta_mis_a_jour then
-                  (meilleur_score, meilleur_coup)
-                else
-                  evaluer_coups
-                    config profondeur alpha beta_mis_a_jour
-                    joueur_max joueur_actuelListe1
-                    reste
-                    (meilleur_score, meilleur_coup)
-and algoMinMax (config: configuration) (profondeur: int) 
-    joueur_max joueurs (alpha:int) (beta:int) : (int * coup option) =
-
-                  let joueur_actuel=List.hd joueurs in 
-
-  if profondeur = 0 || gagnant config then
-    (* Retourne le score pour la configuration courante *)
-    (score_aux config joueur_max, None)
-  else
-    let coups_possibles =
-      (tous_les_coups_possibles config) in    
-    if coups_possibles = [] then
-      (* Aucun coup possible, retourne le score actuel *)
-      (score_aux config joueur_max, None)
-    else
-      (* Initialise le score pour la maximisation/minimisation *)
-      let initial_score = if joueur_actuel = joueur_max then min_int else max_int in
-      evaluer_coups config profondeur alpha beta joueur_max joueurs coups_possibles (initial_score, None);;
 
 
 
@@ -1087,18 +1010,29 @@ and algoMinMax (config: configuration) (profondeur: int)
 
 
 
+(*on va faire une heuristique pour pouvoir avoir le meilleur coup plus rapidement*)
 
 
 
 
 
 
+(*est ce que la fonction du dessus fonctionne ? *)
 
 
+let heuristique config joueur_max coups =
+  List.sort
+    (fun (coup1, _) (coup2, _) ->
+      let configParallele1 = applique_coup config coup1 in
+      let configParallele2 = applique_coup config coup2 in
+      let score1 = score configParallele1 in
+      let score2 = score configParallele2 in
+      compare score2 score1
+    )
+    coups;;
 
 
-
-
+    heuristique configuration_initial Vert (tous_les_coups_possibles configuration_initial);;
 
 
 
@@ -1163,11 +1097,7 @@ let rec algoMinMax (config: configuration) (profondeur: int) (alpha: int) (beta:
                   else
                     min_value reste acc_alpha acc_beta best_score best_coup
           in
-          min_value coups_possibles alpha beta max_int None
-
-
-
-
+          min_value coups_possibles alpha beta max_int None;;
 
 
 
@@ -1208,10 +1138,10 @@ let ia_next_coup config =
   match coup_possibleList with
   | [] -> failwith "aucun coup possible pour l'IA"
   | _ -> 
-    let (_, meilleur_coup) = algoMinMax config 4 min_int max_int tete (liste_joueurs config)  in
+    let (_, meilleur_coup) = algoMinMax config 3 min_int max_int tete (liste_joueurs config)  in
     match meilleur_coup with 
-    | None -> failwith "erreur dans le calcul du meilleur coup"
-    | Some coup -> (coup, "coup effectué");;
+    | None -> failwith "on est dans le cas du None"
+    | Some coup -> (coup, "coup effectue");;
 
 (*on teste à la main le coup qu'il nous propose*)
 
@@ -1219,13 +1149,17 @@ configuration_initial;;
 
 ia_next_coup configuration_initial;;
 
-      
+    
 let testALaMain =
-  ([((5, -3, -2), Vert); ((2, 0, -2), Vert); ((-4, 3, 1), Vert);
-  ((-5, 2, 3), Vert); ((-3, 3, 0), Vert); ((-2, 1, 1), Vert);
-  ((3, 0, -3), Marron); ((4, -2, -2), Marron); ((4, -3, -1), Marron);
-  ((1, 0, -1), Marron); ((1, -1, 0), Marron); ((0, 1, -1), Marron)],
+  ([((6, -3, -3), Vert); ((5, -2, -3), Vert); ((4, -1, -3), Vert);
+  ((4, -2, -2), Vert); ((4, -3, -1), Vert); ((2, -2, 0), Vert);
+  ((-6, 3, 3), Marron); ((-5, 2, 3), Marron); ((-4, 1, 3), Marron);
+  ((-4, 2, 2), Marron); ((-4, 3, 1), Marron); ((-3, 2, 1), Marron)],
  [Vert; Marron]);;
+
+ tous_les_coups_possibles testALaMain;;
+
+gagnant testALaMain;;
 
 
  ia_next_coup testALaMain;;
