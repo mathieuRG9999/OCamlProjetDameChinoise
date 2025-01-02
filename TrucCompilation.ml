@@ -352,8 +352,15 @@ let remplir_init liste_joueurs dim : configuration =
     let rotation_par_joueur = 6 / nombre_joueurs in
     remplir_init_aux liste_joueurs dim rotation_par_joueur 0;;
 
+(* On fait des tests*)
+
 
 let configuration_initial = remplir_init [Vert; Marron] 3;;
+
+
+(*pour tester si c'est nous qui avons un problème ou eux*)
+
+
 
 
 
@@ -632,9 +639,14 @@ match liste with
 | t::q -> if (t>max) then gagnant_aux t q else gagnant_aux max q;;*)
 
 (*je ne sais pas à quoi ces deux fonction servent*)
+
+(*ETRE SUR QUE CES FONCTIONS MARCHENT*)
+
 let guess_dim (config : configuration) = let (liste_case_coloree,_) = config in 
 let dim = List.fold_left (fun acc ((i, _, _), _) -> max acc i) min_int liste_case_coloree in dim/2;;
 
+
+guess_dim configuration_initial;;
 
 let gagnant (config : configuration) : bool = 
   if score config < score_gagnant (guess_dim configuration_initial) then false 
@@ -944,13 +956,7 @@ let rec bubbleSortScore (liste:(coup*case) list) (config:configuration) (nb:int)
       else couP1::bubbleSortScore (couP2::reste) config nb;;
 
 
-let heuristique config = (*on trie les coups pour que les meilleurs ressortent en premier et que notre prunnage soit meilleur*)
-          (*on met les plus prometteir devant*)
-          let listeCoup=tous_les_coups_possibles config in (*je ne sasa pa*)
-          bubbleSortScore listeCoup config 2;;
 
-
-heuristique configuration_initial;;
 *)
 
 (*on va tester si tous els coups possibles fonctionne*)
@@ -1017,19 +1023,67 @@ let score_joueur (config: configuration) (couleur: couleur) : int =
 
 
 
-(*est ce que la fonction du dessus fonctionne ? *)
+(*est ce que la fonction du dessous fonctionne ? Est ce qu'elle permet d'améliorer notre profondeur ? *)
+let nbSaut coup =
+  match coup with
+  | Du (_, _) -> 1
+  | Sm liste -> List.length liste -1;;
+
+(*il faut aussi que je m'assure que personne ne reste en arrière et que tout le monde monte*)
+
+let pions_en_retards (config : configuration) (couleur : couleur) =
+  let (cases, _) = config in
+  let coord_joueur = List.filter (fun ((x, y, z), c) -> c = couleur) cases in
+  match coord_joueur with
+  | [] -> 0
+  | l ->
+      let minX =
+        List.fold_left
+          (fun acc ((x, _, _), _) -> if x < acc then x else acc)
+          max_int
+          l
+      in
+      minX
 
 
-let heuristique config joueur_max coups =
-  List.sort
-    (fun (coup1, _) (coup2, _) ->
-      let configParallele1 = applique_coup config coup1 in
-      let configParallele2 = applique_coup config coup2 in
-      let score1 = score configParallele1 in
-      let score2 = score configParallele2 in
-      compare score2 score1
-    )
-    coups;;
+
+
+  let heuristique config joueur_max coups = (*cout O(nlog(n))*) (*supprimer les coups qui font baisser le score  en tout cas ce clairement mauvais?*)
+    let score_initial= score config in
+    (*on élimine les coups qui nous font reculer*)
+    let liste =List.filter (fun (coup,_) -> score (applique_coup config coup)+1>score_initial ) coups in (*on pourrait en fonction du nombre de coups réduire ou augmenter le filtre*)
+
+
+    List.fast_sort (*on regarde le fast_sort qui apparement est plus rapide*)
+      (fun (coup1, _) (coup2, _) ->
+        (* On applique chaque coup pour calculer son score *)
+        let configParallele1 = applique_coup config coup1 in
+        let configParallele2 = applique_coup config coup2 in
+        let score1 = score configParallele1 in
+        let score2 = score configParallele2 in
+  
+        (* On calcule le nb de sauts pour chaque coup *)
+        let nbSaut1 = nbSaut coup1 in
+        let nbSaut2 = nbSaut coup2 in
+  
+        (* On compare d’abord par score (ordre décroissant) *)
+        let c_score = compare score2 score1 in
+        if c_score <> 0 then
+          c_score
+        else
+          (* Si les scores sont égaux, on compare par nb de sauts (ordre décroissant) *)
+          compare nbSaut2 nbSaut1
+      )
+      liste;;
+
+
+    
+
+    
+
+
+(*l'IA n'arrive pas à finir même si elle a l'avantage, peut etre changer dans l'algo min max les conditions de choix*)
+(*est ce qu'il s'agit d'un coup valide dans el cas W vs BI ? est ce qu'on a mal fait notre coup valide*)
 
 
     heuristique configuration_initial Vert (tous_les_coups_possibles configuration_initial);;
@@ -1041,8 +1095,7 @@ let heuristique config joueur_max coups =
 
 
 
-
-
+(*
 let rec algoMinMax (config: configuration) (profondeur: int) (alpha: int) (beta: int)
                   (joueur_max: couleur) (joueurs: couleur list) : (int * coup option) =
   let joueur_actuel = List.hd joueurs in
@@ -1097,7 +1150,72 @@ let rec algoMinMax (config: configuration) (profondeur: int) (alpha: int) (beta:
                   else
                     min_value reste acc_alpha acc_beta best_score best_coup
           in
-          min_value coups_possibles alpha beta max_int None;;
+          min_value coups_possibles alpha beta max_int None;; *)
+
+(*on doit régler le problème des fins de partie*)
+
+
+(*faire un endgame solver*)
+
+let rec somme k n =
+  match k with
+  | k when k=n ->0
+  | _ -> k +somme (k+1) n;;
+
+
+
+  (*on va dire qu'on rentre en fin de jeu lorsque j'ai deja j'ai 4 élements qui sont déja le triangle bien intallé et je ne devrais plus toucher à eux*)
+
+(*on va aussi essayer de tous les pousser vers l'avant de sorte que personne ne soit laissez derrière*)
+
+  let rec recuperer_n_ieme liste n =
+    match liste with
+    | [] -> []
+    | x::q when n=0 -> x:: recuperer_n_ieme q 0
+    | _::q -> recuperer_n_ieme q (n-1);;
+    
+    let rec nCasesVides config liste joueur_max n compteur =
+      match liste with
+      | [] -> if n>=compteur then true else false
+      | c::q ->
+        match quelle_couleur c config with 
+        | coul when coul=joueur_max ->nCasesVides config q joueur_max (n+1) compteur
+        | _ -> nCasesVides config q joueur_max n compteur;;
+
+        let rec take n liste =
+          match (n, liste) with
+          | (0, _) -> []  (* Si on demande 0 éléments, retourner une liste vide *)
+          | (_, []) -> []  (* Si la liste est vide, retourner une liste vide *)
+          | (n, x :: xs) when n > 0 -> x :: take (n - 1) xs  (* Prendre le premier élément et continuer *)
+          | _ -> failwith "Invalid argument"  (* Cas non valide, lever une erreur *)
+        ;;
+        
+
+(*test avec une nouvelle fin de partie*)
+
+(*
+  let est_fin_de_partie config joueur_max nombreDeCasesVidesAttendu= (*on vérifie que toutes les cases au dessus (strict) de dim+1 sont remplis avec nos cases et à n+1 il reste n cases à remplir*)
+    let listeTriangle =remplir_triangle_haut dim (dim, -dim,-1) in
+    let test1 = List.for_all (fun c -> 
+        match quelle_couleur c config with
+        | couleur when couleur=joueur_max -> true
+        | _ -> false
+      ) (recuperer_n_ieme listeTriangle nombreDeCasesVidesAttendu)
+    in 
+      if not (test1) then false
+      else let listeTriangle1 = take (min nombreDeCasesVidesAttendu dim) listeTriangle  in
+      nCasesVides config listeTriangle1 joueur_max 0 nombreDeCasesVidesAttendu  ;;
+
+est_fin_de_partie config_test Vert 2;;
+*)
+
+
+let est_fin_de_partie config joueur_max dim =
+  let base_triangle = remplir_triangle_haut dim (dim + 1, -dim, -1) in
+  (* Extraire les 3 dernières cases *)
+  let dernieres_cases = List.rev (take 3 (List.rev base_triangle)) in
+  (* Vérifier que ces cases sont toutes de la couleur du joueur_max *)
+  List.for_all (fun case -> quelle_couleur case config = joueur_max) dernieres_cases;;
 
 
 
@@ -1114,31 +1232,176 @@ let rec algoMinMax (config: configuration) (profondeur: int) (alpha: int) (beta:
 
 
 
+let rec algoMinMax1 (config: configuration) (profondeur: int) (alpha: int) (beta: int) (joueur_max: couleur) (joueurs: couleur list) : (int * coup option) =
+
+  let joueur_actuel = List.hd joueurs in
+  
+  (* Condition d'arrêt *)
+  if profondeur = 0 || gagnant config then
+    (score_aux config joueur_max, None)
+  else
+    let  coups_possibles =List.map fst (heuristique config joueur_max (tous_les_coups_possibles config) ) in
+    if coups_possibles = [] then
+      (score_aux config joueur_max, None)
+    else
+      match joueur_actuel with
+      | couleur when couleur = joueur_max ->
+      (* Phase de Maximisation *)
+
+
+      let rec max_value coups acc_alpha acc_beta best_score best_coup =
+      match coups with
+        | [] -> (best_score, best_coup)
+        | coup :: reste ->
+          let nouvelle_config = applique_coup config coup in
+
+          (*ce que je viens de rajouter*)
+          if gagnant nouvelle_config then (max_int, Some coup) else
+          
+
+
+          (*fin du rajout*)
+
+          let (score, _) = algoMinMax1 nouvelle_config (profondeur - 1) acc_alpha acc_beta joueur_max (List.tl joueurs @ [List.hd joueurs]) in
+          if score > best_score then
+            let new_alpha = max acc_alpha score in
+            if new_alpha >= acc_beta then
+              (new_alpha, Some coup)  (* Élagage *)
+            else
+              max_value reste new_alpha acc_beta score (Some coup)
+          else
+            if acc_alpha >= acc_beta then
+              (acc_alpha, best_coup)  (* Élagage *)
+            else
+              max_value reste acc_alpha acc_beta best_score best_coup
+            in
+           max_value coups_possibles alpha beta min_int None
+| _ ->
+  (* Phase de Minimisation *)
+  let rec min_value coups acc_alpha acc_beta best_score best_coup =
+    match coups with
+    | [] -> (best_score, best_coup)
+    | coup :: reste ->
+        let nouvelle_config = applique_coup config coup in
+
+        (*ce que je viens de rajouter*)
+        if gagnant nouvelle_config then (min_int, Some coup) else 
+        (*fin du rajout*)
+
+
+        let (score, _) = algoMinMax1 nouvelle_config (profondeur - 1) acc_alpha acc_beta joueur_max (List.tl joueurs @ [List.hd joueurs]) in
+        if score < best_score then
+          let new_beta = min acc_beta score in
+          if acc_alpha >= new_beta then
+            (new_beta, Some coup)  (* Élagage *)
+          else
+            min_value reste acc_alpha new_beta score (Some coup)
+        else
+          if acc_alpha >= acc_beta then
+            (acc_beta, best_coup)  (* Élagage *)
+          else
+            min_value reste acc_alpha acc_beta best_score best_coup
+           in
+           min_value coups_possibles alpha beta max_int None;;
 
 
 
 
 
 
+(*test potentiel avec un endgame solver de ici*)
+
+
+
+let rec endgame_solver_aux config joueur_max profondeur joueur_actuel : (int * coup option) =
+  if profondeur = 0 || gagnant config then
+    (* Évaluation finale pour le joueur max *)
+    let score_actuel = score_aux config joueur_max in
+    (score_actuel, None)
+  else
+    let coups_possibles = List.map fst (tous_les_coups_possibles config) in
+    if coups_possibles = [] then
+      (* Aucun coup possible *)
+      (score_aux config joueur_max, None)
+    else
+      let evaluer_coup coup =
+        let nouvelle_config = applique_coup config coup in
+        (* Appel récursif pour simuler les coups adverses *)
+        let (score, _) = endgame_solver_aux nouvelle_config joueur_max (profondeur - 1) (List.hd (List.tl (liste_joueurs config))) in
+        score
+      in
+      (* Maximisation pour le joueur max, minimisation pour l'adversaire *)
+      let comparer_scores (score1, _) (score2, _) =
+        if joueur_actuel = joueur_max then compare score2 score1
+        else compare score1 score2
+      in
+      let meilleurs_coups =
+        List.fold_left
+          (fun acc coup ->
+             let score_coup = evaluer_coup coup in
+             (score_coup, Some coup) :: acc)
+          []
+          coups_possibles
+      in
+      (* Retourne le meilleur coup en fonction du joueur actuel *)
+      List.hd (List.sort comparer_scores meilleurs_coups);;
+
+let endgame_solver config joueur_max profondeur =
+  let joueur_actuel = List.hd (liste_joueurs config) in
+  snd (endgame_solver_aux config joueur_max profondeur joueur_actuel);;
+
+
+(* Génère toutes les séquences de coups possibles à partir d'une configuration donnée *)
+let rec explorer_chemins config joueur_max profondeur chemin_actuel chemins_valides =
+  if profondeur = 0 then chemins_valides
+  else
+    let coups_possibles = List.map fst (tous_les_coups_possibles config) in
+    List.fold_left
+      (fun acc coup ->
+         let nouvelle_config = applique_coup config coup in
+         if gagnant nouvelle_config then
+           (* Si on trouve une solution, on ajoute le chemin *)
+           (List.rev (coup :: chemin_actuel)) :: acc
+         else
+           (* Sinon, on continue d'explorer *)
+           explorer_chemins nouvelle_config joueur_max (profondeur - 1) (coup :: chemin_actuel) acc)
+      chemins_valides
+      coups_possibles
+
+(* Fonction principale pour résoudre la fin de partie *)
+let solver_fin_de_partie config joueur_max profondeur =
+  let chemins = explorer_chemins config joueur_max profondeur [] [] in
+  match chemins with
+  | [] -> None (* Aucune solution trouvée *)
+  | solutions ->
+      (* Retourne la première séquence de coups menant à la victoire *)
+      let meilleur_chemin = List.hd (List.sort (fun a b -> compare (List.length a) (List.length b)) solutions) in
+      Some (List.hd meilleur_chemin) (* Premier coup du meilleur chemin *)
+
+
+
+
+(*jusque la*)
 
 
 
 
 
 
+(*sur la fin on a toujours le soucis, on peut filter s'il est à la fin, on met celui la a la fin. Faire un A ou un Djistrka pour retrouver la position dans le cas ou il n'en reste pas beaucoup*)
 
 
 
-
-
-
+(*en cas de fin de jeu on augmente ou triple la profondeur de recherche, changer de fonction d'évaluation*)
 let ia_next_coup config = 
   let tete = List.hd (liste_joueurs config) in  
   let coup_possibleList = tous_les_coups_possibles config in
   match coup_possibleList with
   | [] -> failwith "aucun coup possible pour l'IA"
   | _ -> 
-    let (_, meilleur_coup) = algoMinMax config 3 min_int max_int tete (liste_joueurs config)  in
+    if est_fin_de_partie config tete 2 then let Some coup1 =solver_fin_de_partie config tete 10 in(coup1, "coup effectué en cas de fin de jeu") else 
+    
+    let (_, meilleur_coup) = algoMinMax1 config (3) min_int max_int tete (liste_joueurs config)  in
     match meilleur_coup with 
     | None -> failwith "on est dans le cas du None"
     | Some coup -> (coup, "coup effectue");;
