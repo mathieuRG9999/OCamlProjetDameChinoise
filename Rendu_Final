@@ -1,0 +1,967 @@
+let dim = 3;;
+
+
+
+type case = int * int * int
+
+type couleur =
+  | Vert
+  | Jaune
+  | Rouge
+  | Noir
+  | Bleu
+  | Marron
+  | Libre 
+  | Dehors
+
+
+let string_of_couleur x =
+  match x with
+  | Vert -> "Vert"
+  | Jaune -> "Jaune"
+  | Rouge -> "Rouge"
+  | Noir -> "Noir"
+  | Bleu -> "Bleu"
+  | Marron -> "Marron"
+  | Libre -> "Libre"
+  | Dehors -> "Dehors"
+
+type case_coloree = case * couleur;;
+type configuration = case_coloree list * couleur list;;
+type coup = Du of case * case | Sm of case list;;
+
+let directions = [ (1, -1, 0); (-1, 1, 0);
+ (1, 0, -1); (-1, 0, 1); (0, 1, -1); (0, -1, 1) ]
+
+
+let to_string_case (c:case) = 
+  let (x,y,z) = c in
+  "(" ^ string_of_int(x)^" ,"^string_of_int(y)^" ,"^string_of_int(z) ^ ")";;
+
+let est_dans_losange (c: case) (dim:int) =
+  let (x,y,z) = c in
+  if (x+y+z=0) &&
+    ( x <= 2*dim && x >= (-2)*dim) &&
+    (y <= dim && y >= -dim) &&
+    (z <= dim && z >= -dim)
+     then true
+  else false;;
+
+
+  let est_dans_etoile (c:case) =
+    let (i, j, k)=c in 
+    if  (est_dans_losange (i, j, k) dim || est_dans_losange (j, k, i) dim || est_dans_losange (k,i,j) dim)   then true
+    else false;;
+
+
+      let rec tourne_case m (x : case) = 
+        let (a,b,c) = x in 
+        if m mod 6 = 0 then x 
+        else tourne_case (m-1) (-b, -c, -a);;
+
+    let translate c v = 
+    let (c1,c2,c3)= c in( let (v1,v2,v3)=v in (c1+v1, c2+v2, c3+v3));;
+
+    let diff_case c1 c2= 
+    let (x, y, z)=c1 in (let (x1, y1, z1)=c2 in ((x-x1, y-y1, z-z1)));;
+
+    let  sont_cases_voisines case1 case2= 
+    let (x, y, z)=case1 in 
+    let (x1,y1,z1)=case2 in 
+      if 
+        (x,y,z)=(x1, y1+1, z1-1) ||
+        (x,y,z)=(x1, y1-1, z1+1) ||
+        (x,y,z)=(x1+1,y1-1,z1) ||
+        (x,y,z)=(x1-1,y1+1,z1) ||
+        (x,y,z)=(x1+1,y1,z1-1) ||
+        (x,y,z)=(x1-1,y1,z1+1) 
+       then true
+    
+    else false;;
+
+    let alignement c1 c2 = (*je ne sais pas encore si cette fonction marchent et si elle est nécessaire*)
+      let (x,y,z)=c1 in 
+      let (x1,y1,z1)= c2 in 
+        if x = x1||y=y1||z=z1 then true
+        else false;;
+
+
+    let calcul_pivot case1 case2 = (*on vérifie si les cases sont bien alignés*)(*on pourrait aussi vérifier que les deux éléménts sont dans bien dans le plateau*)
+      if case1 = case2 then None
+      else if alignement case1 case2 then  (*on est aligné*)
+      let (x, y,z) =case1 in
+        let (x1,y1, z1)=case2 in 
+          let xfinal=(x+x1) in 
+            let yfinal=(y+y1) in
+              let zfinal=(z+z1) in 
+                if (xfinal mod 2=0)&&(yfinal mod 2=0)&&(zfinal mod 2 =0) then Some (xfinal/2, yfinal/2, zfinal/2)
+                else None
+    else None;;
+
+
+    let vec_et_dist case1 case2 =
+      let vecteur=diff_case case1 case2 in let (x, y,z)= vecteur in let nombre=(abs x +abs y + abs z)/2 
+    in (((x/nombre, y/nombre, z/nombre)), nombre);;
+
+let rec tourne_liste l=
+      match l with 
+      | [] -> [] 
+      |[x] -> []
+      | x::q -> q @ [x];;
+
+
+
+let rec der_liste l= (*je crois qu'il y a une erreur sur la dernière question de son exemple *)
+      match l with 
+      | [] -> []
+      | [x] -> [x]
+      | _::q -> der_liste q;;
+
+
+let rec remplir_segment m (c:case) = (*fonctionne comme c'est demandé*)
+    let (i,j, k)=c in
+      match m with
+      | 0 -> []
+      | _ -> (i,j,k)::remplir_segment (m-1) (i,j+1,k-1);;
+
+let rec remplir_triangle_bas m (c:case) =(*on force le type pour la simplicité de relecture, il nous faudrait une fonction pour inverser*)
+      let (i, j, k)= c in 
+    match m with 
+    | 0 -> []
+    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_bas (m-1) (i-1, j+1, k);; (*est ce qu'on peut utiliser le "a" ?*)
+
+
+let rec remplir_triangle_haut m (c:case) =(*on force le type pour la simplicité de relecture, il nous faudrait une fonction pour inverser*)
+      let (i, j, k)= c in 
+    match m with 
+    | 0 -> []
+    | _ -> (remplir_segment m (i, j, k)) @ remplir_triangle_haut (m-1) (i+1,j, k-1);; 
+
+
+
+
+let rec colorie (j : couleur) (liste : case list) : case_coloree list=
+  match liste with 
+    | [] -> []
+    | t :: q -> [(t,j)] @ colorie j q;;
+
+(* q 16 et la 17*)
+let rec tourne_case1 m (x:case)=
+let (a, b, c)=x in 
+if m mod 6 =0 then x
+else  tourne_case1 (m-1) (-c,-a,-b);;
+
+let rec tourne_config_aux (liste: case_coloree list) angle : case_coloree list= (*On doit tourner de N/36 de ce que j'ai compris*)
+    match liste with 
+     |[] -> []
+      | (case, couleur)::q -> (tourne_case1 angle case, couleur)::tourne_config_aux q angle;;
+
+
+
+
+  let tourne_config (config:configuration) : configuration= 
+    let (case_list, couleur_list)=config in
+    match couleur_list with 
+    | [] -> (case_list, couleur_list) 
+    | _ -> let gN=6/List.length couleur_list in (*pour remettre le 'N' de l'énoncé*)
+        (tourne_config_aux case_list gN,tourne_liste couleur_list);;
+
+
+let liste_joueurs (_, l) = l;;
+
+let enlever_element element liste =
+  List.filter (function x -> x <> element) liste;;
+
+let rec remplir_init_aux liste_joueurs dim rotation_par_joueur rotation_courante : configuration =
+  match liste_joueurs with
+  | [] -> ([], []) 
+  | joueur :: reste_joueurs ->
+      let cases_de_base = remplir_triangle_bas dim (-dim - 1, 1, dim) in
+      let cases_tournees =
+        List.map (fun case -> (tourne_case rotation_courante case, joueur)) cases_de_base
+      in
+      let (cases_restantes, couleurs_restantes) =
+        remplir_init_aux reste_joueurs dim rotation_par_joueur (rotation_courante + rotation_par_joueur)
+      in
+      (cases_tournees @ cases_restantes, joueur :: couleurs_restantes);;
+
+let remplir_init liste_joueurs dim : configuration =
+  let nombre_joueurs = List.length liste_joueurs in
+  if nombre_joueurs = 0 || 6 mod nombre_joueurs <> 0 then
+    failwith "Le nombre de joueurs doit être un diviseur de 6 (1, 2, 3, 6)."
+  else
+    let rotation_par_joueur = 6 / nombre_joueurs in
+    remplir_init_aux liste_joueurs dim rotation_par_joueur 0;;
+
+
+
+let configuration_initial = remplir_init [Vert; Marron] dim;;
+
+  let rec listeCouleur n = (*il va s'occuper de la liste de couleurs pour la suite*)
+    let liste=configuration_initial in  
+    match n with
+    | 0 -> []
+    | _ -> match liste with (_,[]) -> [] | (_, t::q) -> t::listeCouleur (n-1);;
+
+
+let quelle_couleur (c:case) (config:configuration) = 
+  if not (est_dans_etoile c) then Dehors 
+  else
+    match List.assoc_opt c (fst config) with (*le fst permet de le matcher avec la première partie de la liste*)
+    | None -> Libre
+    | Some q -> q;;
+
+
+
+let rec supprime_dans_config (config:configuration) (c:case) = (*à vérifier*)
+  let (listeCase, listeCouleur)=config in
+  match listeCase with 
+  | [] ->([], listeCouleur)
+  | (case, couleur)::q when case=c -> (q, listeCouleur)
+  | x::q -> let (l1, l2)=supprime_dans_config (q, listeCouleur) c in (x::l1, l2);;
+
+
+let supprime_cases (c1 : case) (c2 : case) (config : configuration) : configuration = 
+  let (i,j,k) = c1 in 
+  let (a,b,c) = c2 in 
+  let (case_coloree_list, color_list) = config in 
+  let nouvelle_liste = List.filter (fun ((x,y,z), _) -> not ((x = i && y = j && z = k) || (x = a && y = b && z = c))) case_coloree_list in 
+  (nouvelle_liste, color_list);;
+
+
+  let rec verifier_cases_aux (case1 : case)  (vi, vj, vk) remaining_dist case_color_list : bool =
+    if remaining_dist = 0 then true 
+    else
+      let (ci, cj, ck) = case1 in
+      if (ci < 0) then 
+        if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
+          false
+        else
+          verifier_cases_aux (ci - vi, cj - vj, ck - vk) (vi, vj, vk) (remaining_dist - 1) case_color_list
+      else 
+      if List.exists (fun ((x, y, z), _) ->x = ci && y = cj && z = ck) case_color_list then
+        false
+      else
+        verifier_cases_aux (ci + vi, cj + vj, ck + vk) (vi, vj, vk) (remaining_dist - 1) case_color_list;;
+
+  let est_libre_seg (c1 : case) (c2 : case) (config : configuration) : bool =
+    let config_new = supprime_cases c1 c2 config in
+    let ((vi, vj, vk), dist) = vec_et_dist c1 c2 in
+    let (case_color_list, _) = config_new in
+    (* Appelle la fonction auxiliaire *)
+    verifier_cases_aux c1 (vi, vj, vk) dist case_color_list  ;;
+
+
+(*on suppose la dimension qu'on a pris en compte au début, peut être faire une fonction pour déterminer la dimension en fonction de la config*)
+let rec case_entre (config : configuration) (c : case) (direction : case) (distance : int) : bool = 
+  match distance with 
+  | 0 -> false (* Pas de cases intermédiaires *)
+  | 1 -> true
+  | _ -> 
+      let (case_coloree_list, _) = config in 
+      let (vi, vj, vk) = c in 
+      let (zi, zj, zk) = direction in 
+      let next_case = (vi - zi, vj - zj, vk - zk) in
+      if List.exists (fun (case_coloree, _) -> case_coloree = next_case) case_coloree_list then 
+        false 
+      else 
+        case_entre config next_case direction (distance - 1);;
+
+let rec case_entre2 (config : configuration) (c : case) (direction : case) (distance : int) : bool = 
+  match distance with 
+  | 0 -> false (* Pas de cases intermédiaires *)
+  | 1 -> let (case_coloree_list, _) = config in 
+        let (vi, vj, vk) = c in 
+        let (zi, zj, zk) = direction in 
+        let next_case = (vi - zi, vj - zj, vk - zk) in
+        if List.exists (fun (case_coloree, _) -> case_coloree = next_case) case_coloree_list then 
+          false 
+        else true
+  | _ -> 
+      let (case_coloree_list, _) = config in 
+      let (vi, vj, vk) = c in 
+      let (zi, zj, zk) = direction in 
+      let next_case = (vi - zi, vj - zj, vk - zk) in
+      if List.exists (fun (case_coloree, _) -> case_coloree = next_case) case_coloree_list then 
+        false 
+      else 
+        case_entre2 config next_case direction (distance - 1);;
+
+
+
+let distance_hex c1 c2 =
+  let (x1, y1, z1) = c1 in
+  let (x2, y2, z2) = c2 in
+  (abs (x1 - x2) + abs (y1 - y2) + abs (z1 - z2)) / 2
+;;
+
+
+let guess_dim (config : configuration) = let (liste_case_coloree,_) = config in 
+let dim = List.fold_left (fun acc ((i, _, _), _) -> max acc i) min_int liste_case_coloree in dim/2;;
+
+let rec testBonneDirection_aux vecteurDeplacement listeDirections =
+  match listeDirections with
+  | [] -> false
+  | t::q -> if t=vecteurDeplacement then true else testBonneDirection_aux vecteurDeplacement q;;
+
+
+let testBonneDirection case1 case2 =
+  let (vect, _) =(vec_et_dist case1 case2) in testBonneDirection_aux vect directions;;
+
+
+let est_saut ((x1, y1, z1) : case) ((x2, y2, z2) : case) (config : configuration) : bool = 
+      if not( testBonneDirection (x1,y1,z1) (x2,y2,z2)) then false
+      else 
+      let directions_impossible = [(-1,0,0); (1,0,0)] in 
+      if not ((est_dans_losange (x2, y2, z2) dim)) then false 
+      else 
+        let (case_coloree_list, _) = config in
+        let (_, d) = vec_et_dist (x1, y1, z1) (x2, y2, z2) in 
+        if d mod 2 = 1 then false else 
+          let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+          if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+              not (List.exists (fun (case, _) -> case = (x2, y2, z2)) case_coloree_list) then
+            let ((xp1, yp1, zp1), d1) = vec_et_dist (x1, y1, z1) pivot in
+            let ((xp2, yp2, zp2), d2) = vec_et_dist pivot (x2, y2, z2) in 
+            if not (List.exists (fun direction -> direction = (xp1, yp1, zp1) || direction = (xp2, yp2, zp2)) directions_impossible) then
+            if case_entre config (x1, y1, z1) (xp1, yp1, zp1)  d1 && case_entre2 config pivot (xp2, yp2, zp2)  d2 then true
+            else false
+          else false
+          else
+            false;;
+
+
+
+
+
+
+
+
+let est_saut_sans_verif ((x1, y1, z1) : case) ((x2, y2, z2) : case) (config : configuration) : bool = 
+    if not( testBonneDirection (x1,y1,z1) (x2,y2,z2)) then false
+    else 
+    let directions_impossible = [(-1,0,0); (1,0,0);(0,1,0);(0,-1,0);(0,0,1); (0,0,-1)] in 
+      let (case_coloree_list, _) = config in
+      let (_, d) = vec_et_dist (x1, y1, z1) (x2, y2, z2) in 
+      if d mod 2 = 1 then false else 
+        let pivot = ((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2) in
+        if List.exists (fun (case, _) -> case = pivot) case_coloree_list &&
+            not (List.exists (fun (case, _) -> case = (x2, y2, z2)) case_coloree_list) then
+          let ((xp1, yp1, zp1), d1) = vec_et_dist (x1, y1, z1) pivot in
+          let ((xp2, yp2, zp2), d2) = vec_et_dist pivot (x2, y2, z2) in 
+          if not (List.exists (fun direction -> direction = (xp1, yp1, zp1) || direction = (xp2, yp2, zp2)) directions_impossible) then
+          if case_entre config (x1, y1, z1) (xp1, yp1, zp1)  d1 && case_entre2 config pivot (xp2, yp2, zp2)  d2 then true
+          else false
+        else false
+        else
+          false;;
+            
+
+
+(*Question 25*)
+(*on ne doi tpas vérifier si la premiere et la dernière case sont bien dans le losange*)
+(*on va devoir le vérifier, dans "est_coup_valide"*)
+let rec est_saut_multiple_aux (case_list : case list) (config : configuration) (cases_visitees : case list) : bool =
+  match case_list with
+  | [] -> true  (* Aucun saut à valider *)
+  | [t] -> est_dans_losange t dim  (* Dernière case doit être dans le losange *)
+  | t1 :: t2 :: [] -> est_saut t1 t2 config
+  | t1 :: t2 :: q ->
+      let config_simulee = 
+        List.fold_left (fun acc_config c -> supprime_dans_config acc_config c) config cases_visitees
+      in
+       if not (est_saut_sans_verif t1 t2 config_simulee) then 
+        false
+      else
+        est_saut_multiple_aux (t2 :: q) config (t1 :: cases_visitees);;
+
+let est_saut_multiple (case_list : case list) (config : configuration) : bool =
+  est_saut_multiple_aux case_list config [];;
+
+
+
+let premierListe liste = (*on sait que la liste n'est pas vide*)
+  match liste with
+  | t::q -> t;;
+
+let  rec dernierListe liste =
+  match liste with
+  | t::[]-> t
+  | t::q -> dernierListe q;;
+
+      let est_coup_valide (config:configuration) (coup:coup) =
+        match coup with
+        | Du(c1, c2) -> 
+            let couleurC2 = quelle_couleur c2 config in 
+            let couleurC1 = quelle_couleur c1 config in
+            let couleur_joueur = List.hd (liste_joueurs config) in
+            (* Vérification des conditions pour un déplacement simple *)
+            if sont_cases_voisines c1 c2 && est_dans_losange c2 dim && couleurC2 = Libre && couleurC1 = couleur_joueur then true
+            else 
+              (* Vérification des conditions pour un saut *)
+              if est_saut c1 c2 config && couleurC1 = couleur_joueur then true
+              else false
+        | Sm casesListes -> 
+            (* Vérification des conditions pour un saut multiple *)
+            if casesListes = [] then false
+            else 
+              let cPremier =premierListe casesListes in
+              let cDernier=dernierListe casesListes in 
+              if (est_dans_losange cPremier dim && est_dans_losange cDernier dim && quelle_couleur cDernier config = Libre) then 
+                (* Vérifier que le premier élément de la liste correspond à la couleur du joueur *)
+                let couleur_premiere_case = quelle_couleur (List.hd casesListes) config in
+                let couleur_joueur = List.hd (liste_joueurs config) in
+                if couleur_premiere_case <> couleur_joueur then false
+                else est_saut_multiple casesListes config
+              else false;;
+      
+          
+let rec applique_coup config coup =
+  match coup with
+  | Du(c1, c2) -> 
+      let couleurC1 = quelle_couleur c1 config in
+      let (listeCase, listeCouleur) = config in
+      (* Supprimer la case c1 et ajouter c2 avec sa couleur *)
+      let (nouvelle_listeCase, _) = supprime_dans_config config c1 in
+      let nouvelle_listeCase = (c2, couleurC1) :: nouvelle_listeCase in
+      (nouvelle_listeCase, listeCouleur)
+  | Sm casesListes ->
+      match casesListes with
+      | [] -> config  (* Aucun coup à appliquer *)
+      | [x] -> config (* Une seule case, pas de mouvement *)
+      | x :: y :: q -> 
+          (* Appliquer un déplacement (Du) entre deux premières cases *)
+          let nouvelle_config = applique_coup config (Du(x, y)) in
+          (* Continuer avec les cases restantes *)
+          applique_coup nouvelle_config (Sm (y :: q));;
+      
+
+
+let mis_a_jour_configuration config coup =(*On doit expliquer l'erreur s'il y en a une*)
+  if (est_coup_valide config coup) then let cpt=applique_coup config coup in Ok cpt
+  else (*on doit trouver quelle étape a échouer, on reprend juste les cas du dessus*)
+  match coup with
+      | Du(c1, c2) ->
+      let couleurC1=quelle_couleur c1 config in 
+          let couleur_joueur=List.hd (liste_joueurs config) in
+            if not (couleurC1=couleur_joueur) then Error "Le pion avec lequel on a voulu partir n'appartient pas au joueur"
+            else if not (sont_cases_voisines c1 c2) then Error "Les cases ne sont pas voisines"
+            else if not (est_dans_losange c2 dim) then Error "La case où on souhaite se déplacer n'appartient pas aux losanges"
+            else Error "Ce coup n'est pas valide, la case d'arrivée est occupé"
+      | _ -> Error "La liste de case donnée n'est pas bonne";;
+
+
+let rec score_aux (config:configuration) couleur = (*on cherche les éléments dans la configuration ayant cette valeur*)
+          match fst config with (*permet d'avoir la première partie =first*)
+          | [] -> 0
+          | ((case, coul)::q) when coul=couleur -> let (i, j, k)=case in i+score_aux (q, snd config) couleur (*=second*)
+          | (_::q) -> score_aux (q, snd config) couleur;;
+          
+          
+let score config =
+  match liste_joueurs config with
+   | [] -> 0 (* la liste est vide donc ne contient rien*)
+   | couleur_protagoniste::_ ->score_aux config couleur_protagoniste;;
+
+let score_gagnant (dim :int) : int = 
+  let list_c = remplir_triangle_haut dim (dim+1, -dim,-1) in 
+  let liste_c_coul = colorie Jaune list_c in 
+  let config_test_score = (liste_c_coul, [Jaune]) in 
+  score config_test_score;;
+
+
+
+let gagnant (config : configuration) : bool = 
+  if score config < score_gagnant (guess_dim configuration_initial) then false 
+  else true;;
+
+
+
+let directions = [ (1, -1, 0); (-1, 1, 0);
+ (1, 0, -1); (-1, 0, 1); (0, 1, -1); (0, -1, 1) ] ;; (*il s'agit de toutes les directions dans lequel le joueur peut aller*)
+
+
+
+let listeDeplacementUnitaire_aux (config: configuration) (caseInitial: case) directions : (coup * case) list = (*essayer de simplifier cette fonction*)
+  List.fold_left (fun acc direction ->
+    let caseSuivante = translate caseInitial direction in
+    let coup = Du(caseInitial, caseSuivante) in
+    if est_coup_valide config coup then
+      (coup, caseSuivante) :: acc
+    else
+      acc) [] directions;;
+
+let listeDeplacementUnitaire (config: configuration) (caseInitial: case) : (coup * case) list =
+  listeDeplacementUnitaire_aux config caseInitial directions;;
+
+
+
+
+ (*  Pseudo-code / squelette pour l'exemple  *)
+
+
+ let est_case_occupee (config : configuration) (c : case) : bool =
+  let (case_coloree_list, _) = config in
+  List.exists (fun (case_coloree, _) -> case_coloree = c) case_coloree_list;;
+
+
+(* Saut *multiple* : on explore toutes les directions à chaque nouvelle case *)
+let addition_case (x1, y1, z1) (x2, y2, z2) = 
+  (x1 + x2, y1 + y2, z1 + z2)
+
+let est_case_occupee config case =
+  match quelle_couleur case config with
+  | Libre | Dehors -> false
+  | _ -> true
+
+  let addition_case (x,y,z) (x1,y1,z1)= (x+x1,y+y1,z+z1);;
+  let rec calcul_saut (config : configuration) (case_init : case) (case_pivot1 : case) (direction : case) (dim : int): (coup * case) option = 
+    match dim with 
+    | 0 -> None
+    | _ -> 
+        let (vi, vj, vk) = case_pivot1 in 
+        let (zi, zj, zk) = direction in 
+        let case_pivot = (vi + zi, vj+zj, vk+zk) in
+        let (ai,bj,ck) = case_pivot in
+        let (case_coloree_list, _) = config in 
+        if List.exists (fun (case_coloree, _) -> case_coloree = case_pivot) case_coloree_list then 
+          let (_, d) = vec_et_dist case_init case_pivot in 
+          let destination = (ai + d * zi, bj + d * zj, ck + d * zk) in 
+          if est_saut case_init destination config then 
+            Some (Sm [case_init; destination], destination)
+          else 
+            None
+        else 
+          calcul_saut config case_init (vi + zi, vj + zj, vk + zk) direction (dim - 1)
+  ;;
+            
+    
+  let calcul_liste_saut (config: configuration) (case_init : case) (directions : (int * int * int) list) : (coup * case) list = 
+    List.fold_left 
+      (fun acc direction -> 
+         let saut = calcul_saut config case_init case_init direction ((guess_dim config)+4) in 
+         match saut with 
+         | Some (coup, case) -> (coup,case) :: acc
+         | None -> acc
+    
+      ) 
+      [] 
+      directions
+  ;;
+    
+  let rec calcul_saut_multiple 
+      (config : configuration) 
+      (case_init : case) 
+      (directions : case list) 
+      (visited : case list) : (coup * case) list =
+    if List.mem case_init visited then [] 
+    else
+      let liste_saut = calcul_liste_saut config case_init directions in
+      List.fold_left (fun acc (coup, case_fin) ->
+          if List.mem case_fin visited then
+            acc 
+          else
+            match coup with
+            | Sm liste_case -> 
+                (match liste_case with
+                 | [] -> acc
+                 | _ -> 
+                     let derniere_case = dernierListe liste_case in
+                     let sauts_suivants = calcul_saut_multiple config derniere_case directions (case_init :: visited) in
+                     (coup, case_fin) :: sauts_suivants @ acc)
+            | Du (_, case_arrivee) -> 
+                let sauts_suivants = calcul_saut_multiple config case_arrivee directions (case_init :: visited) in
+                (coup, case_fin) :: sauts_suivants @ acc
+        ) [] liste_saut
+  ;;
+    
+  let liste_calcul_saut_multiple config case_init directions =
+    calcul_saut_multiple config case_init directions []
+  ;;
+    
+    
+
+    
+  let concatener_coups (sauts : (coup * case) list) : (coup * case) list =
+    let concatener_coup coup1 coup2 =
+      match coup1, coup2 with
+      | Sm l1, Sm l2 -> Sm (l1 @ List.tl l2) (* Concatène en sautant la première case de l2 pour éviter la répétition *)
+      | _ -> coup1
+    in
+    let rec traiter_sauts acc liste courant =
+      match liste with
+      | [] -> List.rev acc (* On retourne l'accumulateur inversé pour conserver l'ordre *)
+      | (coup1, case1) :: reste ->
+          match courant with
+          | None ->
+              (* Premier élément, il n'y a rien à concaténer *)
+              traiter_sauts ((coup1, case1) :: acc) reste (Some (coup1, case1))
+          | Some (coup_courant, case_courante) ->
+              (* Vérifie si la case d'arrivée du courant est égale à la case de départ du coup suivant *)
+              let case_depart_suivant =
+                match coup1 with
+                | Sm (first :: _) -> first
+                | Du (case_start, _) -> case_start
+                | _ -> failwith "Invalid coup"
+              in
+              if case_courante = case_depart_suivant then
+                let coup_concatene = concatener_coup coup_courant coup1 in
+                let derniere_case =
+                  match coup_concatene with
+                  | Sm l -> (match List.rev l with last :: _ -> last | [] -> failwith "Invalid Sm")
+                  | Du (_, case_fin) -> case_fin
+                in
+                traiter_sauts ((coup_concatene, derniere_case) :: acc) reste (Some (coup_concatene, derniere_case))
+              else
+                (* Pas de concaténation, on ajoute le coup suivant séparément *)
+                traiter_sauts ((coup1, case1) :: acc) reste (Some (coup1, case1))
+    in
+    traiter_sauts [] sauts None
+  ;;
+  
+    
+  let liste_finale_multiple config case_init directions = 
+    concatener_coups (liste_calcul_saut_multiple config case_init directions) 
+  ;;
+    
+    
+    
+    
+    
+  let coup_possibles (config:configuration) (caseInitial:case) = 
+    let ( _ , couleurs) = config in 
+    if quelle_couleur caseInitial config <> List.hd (couleurs) then [] else 
+    let directions = [ (1, -1, 0); (-1, 1, 0);
+                       (1, 0, -1); (-1, 0, 1); (0, 1, -1); (0, -1, 1)] in
+    let listeCoupUnique=listeDeplacementUnitaire config caseInitial in
+    let listeCoupPlusieurs= liste_finale_multiple config caseInitial directions in
+    listeCoupUnique  @ listeCoupPlusieurs 
+    
+  
+  
+  
+  let coup_possible config case =coup_possibles config case;;
+
+
+let rec case_bonne_couleur (config:configuration) = (*fonctionne*)
+  let couleur=List.hd (snd config) in 
+  match fst config with
+  | ([]) -> []
+  | ((case, coul)::q) -> 
+    if coul=couleur then case::case_bonne_couleur (q, snd config) else case_bonne_couleur(q, snd config);;
+
+
+
+let rec case_bonne_couleurCouleur (config:configuration) (couleur:couleur) =
+  match fst config with
+  | ([]) -> []
+  | ((case, coul)::q) -> 
+    if coul=couleur then case::case_bonne_couleurCouleur (q, snd config) couleur else case_bonne_couleurCouleur(q, snd config) couleur;;
+
+
+let rec tous_les_coups_possibles_aux (config:configuration) liste = (*nous renvoie tous les coups possibles*)(*renvoie la case à laquelle on applique une liste*)
+      match liste with 
+      | [] -> []
+      | case::listesDeCases -> coup_possibles config case@ tous_les_coups_possibles_aux config listesDeCases;;
+
+let tous_les_coups_possibles (config:configuration) = tous_les_coups_possibles_aux config (case_bonne_couleur config);;
+
+let score_joueur (config: configuration) (couleur: couleur) : int =
+  let (listeCase, _) = config in
+  let rec aux l acc =
+    match l with
+    | [] -> acc
+    | ((c_i, c_j, c_k), coul) :: q ->
+       if coul = couleur then aux q (acc + c_i)  (* ou un autre calcul *)
+       else aux q acc
+  in aux listeCase 0;;
+
+  
+let nbSaut coup =
+  match coup with
+  | Du (_, _) -> 1
+  | Sm liste -> List.length liste -1;;
+
+
+let pions_en_retards (config : configuration) (couleur : couleur) =
+  let (cases, _) = config in
+  let coord_joueur = List.filter (fun ((x, y, z), c) -> c = couleur) cases in
+  match coord_joueur with
+  | [] -> 0
+  | l ->
+      let minX =
+        List.fold_left
+          (fun acc ((x, _, _), _) -> if x < acc then x else acc)
+          max_int
+          l
+      in
+      minX;;
+
+
+      let evaluation config joueur_max =
+        let score_joueur = score config in
+        let pions_en_retard = List.fold_left (fun acc ((x, _, _), couleur) ->
+          if couleur = joueur_max && x < 0 then acc + 1 else acc
+        ) 0 (fst config) in
+        score_joueur - (pions_en_retard * 4)  (* Pénalise les pions en retard *)
+      
+
+
+let heuristique config joueur_max coups =
+  let score_initial = score config in
+  let liste = List.filter (fun (coup, _) ->
+    score (applique_coup config coup) > score_initial
+  ) coups in
+   let liste1=  if List.length liste =0 then coups else liste in 
+
+
+  List.fast_sort (fun (coup1, _) (coup2, _) ->
+    let score1 = score (applique_coup config coup1) in
+    let score2 = score (applique_coup config coup2) in
+
+    (* Compare d'abord par score *)
+    let c_score = compare score2 score1 in
+    if c_score <> 0 then c_score
+    else compare (nbSaut coup2) (nbSaut coup1)  (* Sauts décroissants si scores égaux *)
+  ) liste1;;
+
+    
+
+
+(*On tente une nouvelle heuristique, celle du dessus marche bien *)
+
+
+
+
+
+
+
+
+
+
+
+let rec algoMinMax1 config profondeur alpha beta joueur_max joueurs =
+
+      let joueur_actuel = List.hd joueurs in
+      
+      if profondeur = 0 || gagnant config then
+        (evaluation config joueur_max, None)
+      else
+        let coups_possibles = List.map fst (heuristique config joueur_max (tous_les_coups_possibles config)) in
+        if coups_possibles = [] then
+          (evaluation config joueur_max, None)
+        else
+          match joueur_actuel with
+          | couleur when couleur = joueur_max ->
+              let rec max_value coups acc_alpha acc_beta best_score best_coup =
+                match coups with
+                | [] -> (best_score, best_coup)
+                | coup :: reste ->
+                    let nouvelle_config = applique_coup config coup in
+                    if gagnant nouvelle_config then 
+                      (max_int, Some coup)
+                    else 
+                      let (score, _) = algoMinMax1 nouvelle_config (profondeur - 1) acc_alpha acc_beta joueur_max (List.tl joueurs @ [List.hd joueurs]) in
+                      if score > best_score then
+                        let new_alpha = max acc_alpha score in
+                        if new_alpha >= acc_beta then 
+                          (new_alpha, Some coup) (* Élagage *)
+                        else 
+                          max_value reste new_alpha acc_beta score (Some coup)
+                      else 
+                        max_value reste acc_alpha acc_beta best_score best_coup
+              in
+              max_value coups_possibles alpha beta min_int None
+          | _ ->
+              let rec min_value coups acc_alpha acc_beta best_score best_coup =
+                match coups with
+                | [] -> (best_score, best_coup)
+                | coup :: reste ->
+                    let nouvelle_config = applique_coup config coup in
+                    if gagnant nouvelle_config then 
+                      (min_int, Some coup)
+                    else 
+                      let (score, _) = algoMinMax1 nouvelle_config (profondeur - 1) acc_alpha acc_beta joueur_max (List.tl joueurs @ [List.hd joueurs]) in
+                      if score < best_score then 
+                        let new_beta = min acc_beta score in
+                        if acc_alpha >= new_beta then 
+                          (new_beta, Some coup) (* Élagage *)
+                        else 
+                          min_value reste acc_alpha new_beta score (Some coup)
+                      else 
+                        min_value reste acc_alpha acc_beta best_score best_coup
+              in
+              min_value coups_possibles alpha beta max_int None;;
+
+
+let rec somme k n =
+  match k with
+  | k when k=n ->0
+  | _ -> k +somme (k+1) n;;
+
+
+let rec extraire_case (liste_case : case list) n =
+  match liste_case with
+  | [] -> []
+  | q :: t ->let (x,y,z) = q in if x > dim+1 then liste_case else extraire_case t n 
+
+
+let est_fin_de_partie config joueur_max dim =
+  let base_triangle = remplir_triangle_haut dim (dim + 1, -dim, -1) in
+  if List.length base_triangle < dim then false else
+  let dernieres_cases = extraire_case base_triangle dim in 
+  List.for_all (fun case -> quelle_couleur case config = joueur_max) dernieres_cases;;
+
+
+
+
+let la_case_est_atteignable (case_initial:case) (case_finale:case) profondeur_max =
+  let (_, dist)=vec_et_dist case_initial case_finale in
+  profondeur_max>dist;;
+
+
+
+let rec trouve_chemin config case_initiale case_finale profondeur_max =
+  let rec aux config case_courante chemin profondeur =
+    if profondeur > profondeur_max then []
+    else if case_courante = case_finale then [List.rev chemin]
+    else
+      let coups_possibles = coup_possibles config case_courante in
+      List.fold_left (fun acc (coup, nouvelle_case) ->
+        let nouvelle_config = applique_coup config coup in
+        let nouveaux_chemins = aux nouvelle_config nouvelle_case (coup :: chemin) (profondeur + 1) in
+        acc @ nouveaux_chemins
+      ) [] coups_possibles
+  in
+  aux config case_initiale [] 0;;
+
+let meilleur_chemin config case_initiale case_finale profondeur_max = (*fonctionne si la case initiale est derriere la case finale*)
+  let chemins = trouve_chemin config case_initiale case_finale profondeur_max in
+  match chemins with
+  | [] -> None
+  | _ -> Some (List.hd (List.sort (fun a b -> compare (List.length a) (List.length b)) chemins));;
+
+let first_n_opt n lst =
+  let rec aux acc n lst =
+    if n = 0 then Some (List.rev acc)
+    else
+      match lst with
+      | x :: xs -> aux (x :: acc) (n - 1) xs
+      | _ -> None
+  in
+  if n < 0 then None
+  else aux [] n lst
+;;
+
+let drop_first n lst =
+  let rec aux count = function
+    | [] -> []
+    | _::xs when count > 0 -> aux (count - 1) xs
+    | xs -> xs
+  in
+  aux n lst;;
+
+
+
+
+let rec verif_preliminaire_aux config liste joueur_max =
+  match liste with
+  | [] -> true 
+  | x::q -> 
+    match quelle_couleur x config with
+    | couleur when couleur=joueur_max -> verif_preliminaire_aux config  q joueur_max
+    | _ -> false;; 
+
+    let verif_preliminaire config joueur_max = let dim1=guess_dim config in 
+    verif_preliminaire_aux config (drop_first dim1 (remplir_triangle_haut dim1  (dim1+1, -dim1, -1))) joueur_max;;
+
+
+
+let ilEnManque1PourFinirLaPartieCombinee config joueur_max =
+  if not (verif_preliminaire config joueur_max ) then (false, None) else 
+  let dimCalcul =guess_dim config in 
+  let listeTriangleHaut = remplir_triangle_haut dimCalcul (dimCalcul + 1, -dimCalcul, -1) in 
+  
+  match first_n_opt dimCalcul listeTriangleHaut with
+  | None -> 
+      (false, None)
+  | Some liste ->
+      let rec bonne_couleur liste1 config nbCasesVides firstLibre joueur_max =
+        match liste1 with
+        | [] -> 
+            if nbCasesVides > 1 then 
+              (false, firstLibre) 
+            else 
+              (true, firstLibre)
+        | x :: q -> 
+            match quelle_couleur x config with
+            | Libre -> 
+                let newFirstLibre = match firstLibre with
+                                    | None -> Some x
+                                    | Some _ -> firstLibre
+                in
+                bonne_couleur q config (nbCasesVides + 1) newFirstLibre joueur_max
+            | couleur when couleur = joueur_max -> 
+                bonne_couleur q config nbCasesVides firstLibre joueur_max
+            | _ -> 
+                (false, firstLibre)
+      in
+      bonne_couleur liste config 0 None joueur_max
+;;
+
+
+
+(*on suppose maintenant qu'il en manque un pour finir, il faut regarder ou se cache le dernier*)
+
+
+let rec derriereAlorsQueLesAutresOntFinis_aux (liste:case list) :case=
+  match liste with
+  | (x,y,z)::q when x <dim+1 ->(x,y,z)
+  | _::q -> derriereAlorsQueLesAutresOntFinis_aux q;;
+
+  let verif_fin_de_jeu (config : configuration) couleur = 
+    let score_joueur = score config in 
+    if score_joueur = (score_gagnant dim) - (dim+1) then true else false;;
+
+(*
+let verif_fin_de_jeu config joueur_max =
+  let (test, _)= ilEnManque1PourFinirLaPartieCombinee config joueur_max in test
+*)
+let finitionLockin config joueur_max = (*il me renvoie la bonne liste de coup, maintenant il ne reste plus qu'à vérifier prendre le premier coup*)
+  let (test,Some case_finale)=ilEnManque1PourFinirLaPartieCombinee config joueur_max in
+  let  case_initiale =derriereAlorsQueLesAutresOntFinis_aux (case_bonne_couleurCouleur config joueur_max) in
+  if test then meilleur_chemin config case_initiale case_finale 3 else  failwith "problème";;
+
+
+
+let premier_element_liste (liste:coup list option) =
+  match liste with
+  | None -> None
+  | Some [] -> None
+  | Some (first::_) -> Some first;;
+
+
+
+
+
+
+let ia_next_coup config = 
+
+
+  let tete = List.hd (liste_joueurs config) in  
+  let coup_possibleList = tous_les_coups_possibles config in
+  match coup_possibleList with
+  | [] -> (Du((3,3,-6), (2,3,-5)), "erreur faite exprès pour debuguer, cas de la liste vide")
+  | _ -> 
+   let var=verif_fin_de_jeu config tete in 
+   if var then
+  
+     match (premier_element_liste (finitionLockin config tete)) with
+     | None ->   (Du((3,3,-6), (2,3,-5)), "erreur faite exprès pour debuguer, cas du lock in defaillant")
+     | Some coup -> (coup, "lock in ")
+   else 
+    
+    let (_, meilleur_coup) = algoMinMax1 config 4 min_int max_int tete (liste_joueurs config)  in
+    match meilleur_coup with 
+    | None -> failwith "on est dans le cas du None"
+    | Some coup -> (coup, "coup effectue");;
